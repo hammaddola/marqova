@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { clientBucket, clientIpFrom, safeNextPath } from "@/lib/request";
 
 describe("safeNextPath", () => {
@@ -11,8 +11,14 @@ describe("safeNextPath", () => {
 });
 
 describe("clientBucket", () => {
-  it("never fails open: unknown clients share a coarse bucket with a larger budget", () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it("never fails open: without a trusted proxy, clients share a coarse bucket with a larger budget", () => {
+    vi.stubEnv("TRUST_PROXY", "false");
     expect(clientBucket(new Headers({ "x-real-ip": "9.9.9.9" }), 10)).toEqual({ key: "ip:unknown", limit: 200 });
+  });
+  it("gives each client its own bucket behind a trusted proxy", () => {
+    vi.stubEnv("TRUST_PROXY", "true");
+    expect(clientBucket(new Headers({ "x-real-ip": "9.9.9.9" }), 10)).toEqual({ key: "ip:9.9.9.9", limit: 10 });
   });
 });
 
