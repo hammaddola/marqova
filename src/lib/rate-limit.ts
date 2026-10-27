@@ -20,6 +20,12 @@ function sweep(now: number) {
   for (const [k, b] of buckets) if (b.resetAt <= now) buckets.delete(k);
 }
 
+/** True when `key` has used up its budget, without consuming an attempt. */
+export function isRateLimited(key: string, limit: number, now = Date.now()) {
+  const b = buckets.get(key);
+  return !!b && b.resetAt > now && b.count >= limit;
+}
+
 export function resetRateLimits() {
   buckets.clear();
 }

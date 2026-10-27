@@ -18,7 +18,10 @@ export function safeNextPath(next: unknown, fallback = "/") {
   try {
     const url = new URL(next, "http://marqova.local");
     if (url.origin !== "http://marqova.local") return fallback;
-    return `${url.pathname}${url.search}${url.hash}`;
+    // Validate the normalised output too: "/.//evil.com" normalises to "//evil.com".
+    const out = `${url.pathname}${url.search}${url.hash}`;
+    if (out.startsWith("//") || out.includes("\\")) return fallback;
+    return out;
   } catch {
     return fallback;
   }

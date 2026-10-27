@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { PriorityQueue, topN } from "@/lib/priority-queue";
-import { rateLimit, resetRateLimits } from "@/lib/rate-limit";
+import { isRateLimited, rateLimit, resetRateLimits } from "@/lib/rate-limit";
 import { parseSearchParams, activeFilterCount } from "@/lib/search-params";
 import { formatPrice, percentOff, slugify } from "@/lib/utils";
 import { jsonLd } from "@/lib/seo";
@@ -33,6 +33,14 @@ describe("rateLimit", () => {
     for (let i = 0; i < 3; i++) expect(rateLimit("k", 3, 1000, t).ok).toBe(true);
     expect(rateLimit("k", 3, 1000, t).ok).toBe(false);
     expect(rateLimit("k", 3, 1000, t + 1001).ok).toBe(true);
+  });
+  it("can check a budget without consuming it", () => {
+    const t = 2_000_000;
+    expect(isRateLimited("p", 2, t)).toBe(false);
+    rateLimit("p", 2, 1000, t);
+    rateLimit("p", 2, 1000, t);
+    expect(isRateLimited("p", 2, t)).toBe(true);
+    expect(isRateLimited("p", 2, t + 1001)).toBe(false);
   });
 });
 

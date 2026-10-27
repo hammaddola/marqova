@@ -4,7 +4,8 @@ import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
+import { isRateLimited, rateLimit } from "@/lib/rate-limit";
+import { clientIpFrom } from "@/lib/request";
 import type { Role } from "@/generated/prisma/enums";
 
 declare module "next-auth" {
@@ -23,16 +24,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: { email: {}, password: {} },
-      async authorize(raw) {
+      async authorize(raw, request) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
-        // Per-account limit (on top of the per-IP limit in proxy.ts) so rotating IPs can't
-        // brute-force one password. Applies to the server action and the raw callback endpoint.
-        if (!rateLimit(`login-email:${parsed.data.email.toLowerCase()}`, 8, 15 * 60_000).ok) return null;
-        const user = await db.user.findUnique({ where: { email: parsed.data.email.toLowerCase() } });
-        if (!user?.passwordHash) return null;
-        const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
-        if (!ok) return null;
+        // Only FAILED attempts count, so nobody can lock an account just by trying it:
+        //  - 8 failures per email + IP per 15 min stops ordinary brute force;
+        //  - 100 failures per email per 15 min (any IP) caps distributed guessing while
+        //    being far too high for a casual lockout of someone else's account.
+        const email = parsed.data.email.toLowerCase();
+        const ipKey = `login-fail:${email}:${request ? clientIpFrom(request.headers) : "local"}`;
+        const emailKey = `login-fail:${email}`;
+        if (isRateLimited(ipKey, 8) || isRateLimited(emailKey, 100)) return null;
+        const user = await db.user.findUnique({ where: { email } });
+        const ok = !!user?.passwordHash && (await bcrypt.compare(parsed.data.password, user.passwordHash));
+        if (!ok || !user) {
+          rateLimit(ipKey, 8, 15 * 60_000);
+          rateLimit(emailKey, 100, 15 * 60_000);
+          return null;
+        }
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },
     }),

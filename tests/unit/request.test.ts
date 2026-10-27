@@ -5,7 +5,7 @@ describe("safeNextPath", () => {
   it("keeps same-site paths", () => {
     expect(safeNextPath("/account/orders?x=1#top")).toBe("/account/orders?x=1#top");
   });
-  it.each(["//evil.com", "/\\evil.com", "\\\\evil.com", "https://evil.com", "/\tevil", "javascript:alert(1)", 42, undefined])("rejects %s", (bad) => {
+  it.each(["//evil.com", "/.//evil.com", "/a/..//evil.com", "/\\evil.com", "\\\\evil.com", "https://evil.com", "/\tevil", "javascript:alert(1)", 42, undefined])("rejects %s", (bad) => {
     expect(safeNextPath(bad)).toBe("/");
   });
 });
