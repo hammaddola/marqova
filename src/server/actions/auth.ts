@@ -9,14 +9,16 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clientIpFrom, safeNextPath } from "@/lib/request";
 import { fieldErrors, loginSchema, registerSchema, type ActionResult } from "@/lib/validation";
 
-async function ip() {
-  return clientIpFrom(await headers());
+/** True when the per-IP budget is exhausted; unknown IPs are not IP-limited (see lib/request). */
+async function ipLimited(action: string, limit: number) {
+  const ip = clientIpFrom(await headers());
+  return ip ? !rateLimit(`${action}:${ip}`, limit, 60_000).ok : false;
 }
 
 const safeNext = (next: unknown) => safeNextPath(next);
 
 export async function loginAction(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (!rateLimit(`login:${await ip()}`, 10, 60_000).ok) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
+  if (await ipLimited("login", 10)) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Check the highlighted fields.", fields: fieldErrors(parsed.error) };
   try {
@@ -29,7 +31,7 @@ export async function loginAction(_: ActionResult | null, formData: FormData): P
 }
 
 export async function registerAction(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (!rateLimit(`register:${await ip()}`, 5, 60_000).ok) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
+  if (await ipLimited("register", 5)) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Check the highlighted fields.", fields: fieldErrors(parsed.error) };
   const exists = await db.user.findUnique({ where: { email: parsed.data.email } });

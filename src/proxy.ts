@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { clientIpFrom } from "@/lib/request";
+import { clientIpFrom, warnIfProxyUntrusted } from "@/lib/request";
 
 /**
  * Edge of the app: rate limiting for auth/search/AI endpoints and an Origin check
@@ -21,16 +21,15 @@ const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
 // Machine-to-machine endpoints authenticate with API keys / signatures instead of cookies.
 const CSRF_EXEMPT = ["/api/v1/", "/api/webhooks/", "/api/jobs/"];
 
-function clientIp(req: NextRequest) {
-  return clientIpFrom(req.headers);
-}
-
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  warnIfProxyUntrusted();
+  const ip = clientIpFrom(req.headers);
   const rule = LIMITS.find((l) => pathname.startsWith(l.prefix));
-  if (rule && (rule.prefix !== "/search" || SAFE.has(req.method))) {
-    const res = rateLimit(`${rule.prefix}:${clientIp(req)}`, rule.limit, rule.windowMs);
+  // No trustworthy IP → skip per-IP limits (per-account limits in auth still apply).
+  if (ip && rule && (rule.prefix !== "/search" || SAFE.has(req.method))) {
+    const res = rateLimit(`${rule.prefix}:${ip}`, rule.limit, rule.windowMs);
     if (!res.ok) {
       return new NextResponse(JSON.stringify({ error: "Too many requests. Please slow down." }), {
         status: 429,

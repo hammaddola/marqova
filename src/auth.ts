@@ -33,15 +33,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         //  - 20 failures per email per 15 min from anywhere. A temporary 15-minute lockout is the
         //    deliberate trade-off against distributed guessing (see DECISIONS.md D17).
         const email = parsed.data.email.toLowerCase();
-        const ipKey = `login-fail:${email}:${request ? clientIpFrom(request.headers) : "direct"}`;
+        const ip = request ? clientIpFrom(request.headers) : null;
+        const ipKey = ip ? `login-fail:${email}:${ip}` : null;
         const emailKey = `login-fail:${email}`;
-        const byIp = rateLimit(ipKey, 8, 15 * 60_000);
-        const byEmail = rateLimit(emailKey, 20, 15 * 60_000);
-        if (!byIp.ok || !byEmail.ok) return null;
+        const byIp = ipKey ? rateLimit(ipKey, 8, 15 * 60_000).ok : true;
+        const byEmail = rateLimit(emailKey, 20, 15 * 60_000).ok;
+        if (!byIp || !byEmail) return null;
         const user = await db.user.findUnique({ where: { email } });
         const ok = !!user?.passwordHash && (await bcrypt.compare(parsed.data.password, user.passwordHash));
         if (!ok || !user) return null;
-        refundRateLimit(ipKey);
+        if (ipKey) refundRateLimit(ipKey);
         refundRateLimit(emailKey);
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },
