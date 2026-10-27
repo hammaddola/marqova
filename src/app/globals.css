@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/*
+ * Marqova design tokens. Classic, premium, calm.
+ * Tailwind v4 reads tokens from @theme (there is no tailwind.config.js); every
+ * token is also a CSS variable, e.g. var(--color-gold-500).
+ */
+@theme {
+  --color-navy-900: #0e1a2b;
+  --color-navy-800: #15233a;
+  --color-navy-700: #1c2a40;
+  --color-navy-600: #2b3c57;
+  --color-gold-300: #e3cc8f;
+  --color-gold-100: #f6efdc;
+  --color-gold-500: #c8a24a;
+  --color-gold-600: #a8842f;
+  --color-gold-text: #7a5e1c;
+  --color-ivory: #faf8f3;
+  --color-ink: #1a2333;
+  --color-slate: #5b6575;
+  --color-sand: #e6e1d6;
+  --color-sand-50: #f3f0e9;
+  --color-emerald: #1f7a5a;
+  --color-emerald-50: #e8f3ee;
+  --color-crimson: #b3261e;
+  --color-crimson-50: #fbeceb;
+  --color-amber: #b26b00;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, serif;
+
+  --radius-brand: 8px;
+  --shadow-card: 0 1px 2px rgb(14 26 43 / 0.04), 0 4px 16px rgb(14 26 43 / 0.06);
+  --shadow-lift: 0 2px 6px rgb(14 26 43 / 0.06), 0 16px 40px rgb(14 26 43 / 0.12);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  @keyframes shimmer {
+    from { background-position: -400px 0; }
+    to { background-position: 400px 0; }
+  }
+  /* CSS entrance for above-the-fold content: runs before hydration, so it never delays LCP. */
+  --animate-fade-up: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  @keyframes fade-up {
+    from { opacity: 0.001; transform: translateY(10px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* Visible, consistent focus ring everywhere (WCAG 2.4.7). */
+:focus-visible {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.focus-dark:focus-visible { outline-color: #fff; }
+
+@layer components {
+  .container-page {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 768px) { .container-page { padding-inline: 1.5rem; } }
+  @media (min-width: 1280px) { .container-page { padding-inline: 2rem; } }
+
+  .heading-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-sand-50) 0px, #fff 120px, var(--color-sand-50) 240px);
+    background-size: 800px 100%;
+    animation: var(--animate-shimmer);
+    border-radius: 6px;
+  }
+
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+
+  .prose-marqova p { margin-block: 0.75rem; line-height: 1.7; color: var(--color-ink); }
+  .prose-marqova h2 { font-family: var(--font-display); font-size: 1.5rem; margin-top: 2rem; margin-bottom: 0.5rem; }
+  .prose-marqova ul { list-style: disc; padding-left: 1.25rem; }
+  .prose-marqova li { margin-block: 0.25rem; }
+}
+
+/* Try-On Studio is the only dark surface in the store. */
+.studio-dark {
+  --studio-bg: var(--color-navy-900);
+  background: var(--studio-bg);
+  color: #f1f3f6;
+}
+
+model-viewer {
+  --poster-color: transparent;
+  --progress-bar-color: var(--color-gold-500);
+}
