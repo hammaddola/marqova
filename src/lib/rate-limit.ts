@@ -26,6 +26,12 @@ export function isRateLimited(key: string, limit: number, now = Date.now()) {
   return !!b && b.resetAt > now && b.count >= limit;
 }
 
+/** Gives back one reserved attempt (e.g. after a successful login). */
+export function refundRateLimit(key: string) {
+  const b = buckets.get(key);
+  if (b && b.count > 0) b.count--;
+}
+
 export function resetRateLimits() {
   buckets.clear();
 }

@@ -12,8 +12,10 @@ describe("safeNextPath", () => {
 
 describe("clientIpFrom", () => {
   it("prefers x-real-ip, then the right-most forwarded hop (set by our proxy)", () => {
-    expect(clientIpFrom(new Headers({ "x-real-ip": "9.9.9.9", "x-forwarded-for": "1.1.1.1" }))).toBe("9.9.9.9");
-    expect(clientIpFrom(new Headers({ "x-forwarded-for": "6.6.6.6, 2.2.2.2" }))).toBe("2.2.2.2");
-    expect(clientIpFrom(new Headers())).toBe("local");
+    expect(clientIpFrom(new Headers({ "x-real-ip": "9.9.9.9", "x-forwarded-for": "1.1.1.1" }), true)).toBe("9.9.9.9");
+    expect(clientIpFrom(new Headers({ "x-forwarded-for": "6.6.6.6, 2.2.2.2" }), true)).toBe("2.2.2.2");
+    expect(clientIpFrom(new Headers(), true)).toBe("local");
+    // Without a trusted proxy, spoofable headers are ignored entirely.
+    expect(clientIpFrom(new Headers({ "x-real-ip": "9.9.9.9" }), false)).toBe("direct");
   });
 });

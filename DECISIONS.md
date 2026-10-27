@@ -47,5 +47,8 @@ Fine for a single node and for development. For horizontal scaling, back `src/li
 ### D15. Embedded PostgreSQL for machines without Docker
 `npm run db:embedded` starts PostgreSQL from `node_modules` on port 5433, so contributors without Docker can still run everything.
 
+### D17. Login throttling favours safety over convenience
+Failed sign-ins are capped at 8 per email + IP and 20 per email (any IP) per 15 minutes. Attempts are reserved before the password check and refunded on success, so concurrent requests can't race past the limit. The trade-off: someone hammering your email can lock it for 15 minutes; the alternative is unlimited distributed guessing. Forwarded IP headers are trusted only with `TRUST_PROXY=true`. Counters are in memory per instance; move them to Redis when scaling out (PRIORITY_QUEUE P0-6), and consider CAPTCHA after a few failures.
+
 ### D16. Above-the-fold entrances use CSS, not JavaScript
 Motion animates below-the-fold reveals, menus, drawers, the cart badge and step transitions. The hero headline and product grids use a CSS keyframe, so the Largest Contentful Paint never waits for hydration. Heavy below-the-fold widgets (Recharts price history, reviews, Q&A) are code-split.

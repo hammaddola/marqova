@@ -3,7 +3,9 @@
  * hop are set by our own proxy/platform; left-most hops are client-controlled
  * and must not be trusted.
  */
-export function clientIpFrom(headers: Headers) {
+export function clientIpFrom(headers: Headers, trustProxy = process.env.TRUST_PROXY === "true") {
+  // Forwarded headers are client-controlled unless a trusted proxy overwrites them.
+  if (!trustProxy) return "direct";
   const real = headers.get("x-real-ip")?.trim();
   if (real) return real;
   const hops = headers.get("x-forwarded-for")?.split(",").map((h) => h.trim()).filter(Boolean) ?? [];

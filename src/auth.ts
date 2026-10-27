@@ -4,7 +4,7 @@ import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { isRateLimited, rateLimit } from "@/lib/rate-limit";
+import { rateLimit, refundRateLimit } from "@/lib/rate-limit";
 import { clientIpFrom } from "@/lib/request";
 import type { Role } from "@/generated/prisma/enums";
 
@@ -27,21 +27,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(raw, request) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
-        // Only FAILED attempts count, so nobody can lock an account just by trying it:
-        //  - 8 failures per email + IP per 15 min stops ordinary brute force;
-        //  - 100 failures per email per 15 min (any IP) caps distributed guessing while
-        //    being far too high for a casual lockout of someone else's account.
+        // Attempts are reserved synchronously before any await (no check-then-act race) and
+        // refunded on success, so only failures accumulate:
+        //  - 8 failures per email + client IP per 15 min (IP only trusted behind TRUST_PROXY);
+        //  - 20 failures per email per 15 min from anywhere. A temporary 15-minute lockout is the
+        //    deliberate trade-off against distributed guessing (see DECISIONS.md D17).
         const email = parsed.data.email.toLowerCase();
-        const ipKey = `login-fail:${email}:${request ? clientIpFrom(request.headers) : "local"}`;
+        const ipKey = `login-fail:${email}:${request ? clientIpFrom(request.headers) : "direct"}`;
         const emailKey = `login-fail:${email}`;
-        if (isRateLimited(ipKey, 8) || isRateLimited(emailKey, 100)) return null;
+        const byIp = rateLimit(ipKey, 8, 15 * 60_000);
+        const byEmail = rateLimit(emailKey, 20, 15 * 60_000);
+        if (!byIp.ok || !byEmail.ok) return null;
         const user = await db.user.findUnique({ where: { email } });
         const ok = !!user?.passwordHash && (await bcrypt.compare(parsed.data.password, user.passwordHash));
-        if (!ok || !user) {
-          rateLimit(ipKey, 8, 15 * 60_000);
-          rateLimit(emailKey, 100, 15 * 60_000);
-          return null;
-        }
+        if (!ok || !user) return null;
+        refundRateLimit(ipKey);
+        refundRateLimit(emailKey);
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },
     }),

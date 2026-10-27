@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { PriorityQueue, topN } from "@/lib/priority-queue";
-import { isRateLimited, rateLimit, resetRateLimits } from "@/lib/rate-limit";
+import { isRateLimited, rateLimit, refundRateLimit, resetRateLimits } from "@/lib/rate-limit";
 import { parseSearchParams, activeFilterCount } from "@/lib/search-params";
 import { formatPrice, percentOff, slugify } from "@/lib/utils";
 import { jsonLd } from "@/lib/seo";
@@ -41,6 +41,11 @@ describe("rateLimit", () => {
     rateLimit("p", 2, 1000, t);
     expect(isRateLimited("p", 2, t)).toBe(true);
     expect(isRateLimited("p", 2, t + 1001)).toBe(false);
+  });
+  it("refunds reserved attempts", () => {
+    rateLimit("r", 1, 60_000);
+    refundRateLimit("r");
+    expect(rateLimit("r", 1, 60_000).ok).toBe(true);
   });
 });
 
