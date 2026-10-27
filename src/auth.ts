@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { rateLimit } from "@/lib/rate-limit";
 import type { Role } from "@/generated/prisma/enums";
 
 declare module "next-auth" {
@@ -25,6 +26,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(raw) {
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
+        // Per-account limit (on top of the per-IP limit in proxy.ts) so rotating IPs can't
+        // brute-force one password. Applies to the server action and the raw callback endpoint.
+        if (!rateLimit(`login-email:${parsed.data.email.toLowerCase()}`, 8, 15 * 60_000).ok) return null;
         const user = await db.user.findUnique({ where: { email: parsed.data.email.toLowerCase() } });
         if (!user?.passwordHash) return null;
         const ok = await bcrypt.compare(parsed.data.password, user.passwordHash);
@@ -35,13 +39,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...(googleEnabled ? [Google] : []),
   ],
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       // Google users are created on first sign-in (no adapter needed with JWT sessions).
-      if (account?.provider === "google" && user.email) {
+      if (account?.provider === "google") {
+        if (!user.email || profile?.email_verified !== true) return "/login?error=unverified";
+        const email = user.email.toLowerCase();
+        const existing = await db.user.findUnique({ where: { email }, select: { passwordHash: true } });
+        // Never attach Google to a password account automatically: whoever registered that
+        // email first (possibly an attacker) would share the account. The owner signs in with
+        // their password instead; explicit account linking is a P1 item.
+        if (existing?.passwordHash) return "/login?error=use-password";
         await db.user.upsert({
-          where: { email: user.email.toLowerCase() },
+          where: { email },
           update: { name: user.name ?? undefined, image: user.image ?? undefined },
-          create: { email: user.email.toLowerCase(), name: user.name, image: user.image, emailVerified: new Date() },
+          create: { email, name: user.name, image: user.image, emailVerified: new Date() },
         });
       }
       return true;

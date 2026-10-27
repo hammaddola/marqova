@@ -6,17 +6,14 @@ import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { clientIpFrom, safeNextPath } from "@/lib/request";
 import { fieldErrors, loginSchema, registerSchema, type ActionResult } from "@/lib/validation";
 
 async function ip() {
-  const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  return clientIpFrom(await headers());
 }
 
-function safeNext(next: unknown) {
-  const n = typeof next === "string" ? next : "/";
-  return n.startsWith("/") && !n.startsWith("//") ? n : "/";
-}
+const safeNext = (next: unknown) => safeNextPath(next);
 
 export async function loginAction(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
   if (!rateLimit(`login:${await ip()}`, 10, 60_000).ok) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { clientIpFrom } from "@/lib/request";
 
 /**
  * Edge of the app: rate limiting for auth/search/AI endpoints and an Origin check
@@ -21,7 +22,7 @@ const SAFE = new Set(["GET", "HEAD", "OPTIONS"]);
 const CSRF_EXEMPT = ["/api/v1/", "/api/webhooks/", "/api/jobs/"];
 
 function clientIp(req: NextRequest) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
+  return clientIpFrom(req.headers);
 }
 
 export function proxy(req: NextRequest) {

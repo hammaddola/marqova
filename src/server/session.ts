@@ -7,7 +7,12 @@ import type { Role } from "@/generated/prisma/enums";
 
 export const getSessionUser = cache(async () => {
   const session = await auth();
-  return session?.user?.id ? session.user : null;
+  if (!session?.user?.id) return null;
+  // The JWT can outlive a role change or account deletion, so authorization always uses
+  // the current database role, not the one cached in the token.
+  const current = await db.user.findUnique({ where: { id: session.user.id }, select: { role: true, name: true } });
+  if (!current) return null;
+  return { ...session.user, role: current.role, name: current.name ?? session.user.name };
 });
 
 export async function requireUser(next = "/account") {
