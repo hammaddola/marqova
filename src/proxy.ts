@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { clientIpFrom, warnIfProxyUntrusted } from "@/lib/request";
+import { clientBucket } from "@/lib/request";
 
 /**
  * Edge of the app: rate limiting for auth/search/AI endpoints and an Origin check
@@ -24,12 +24,10 @@ const CSRF_EXEMPT = ["/api/v1/", "/api/webhooks/", "/api/jobs/"];
 export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  warnIfProxyUntrusted();
-  const ip = clientIpFrom(req.headers);
   const rule = LIMITS.find((l) => pathname.startsWith(l.prefix));
-  // No trustworthy IP → skip per-IP limits (per-account limits in auth still apply).
-  if (ip && rule && (rule.prefix !== "/search" || SAFE.has(req.method))) {
-    const res = rateLimit(`${rule.prefix}:${ip}`, rule.limit, rule.windowMs);
+  if (rule && (rule.prefix !== "/search" || SAFE.has(req.method))) {
+    const bucket = clientBucket(req.headers, rule.limit);
+    const res = rateLimit(`${rule.prefix}:${bucket.key}`, bucket.limit, rule.windowMs);
     if (!res.ok) {
       return new NextResponse(JSON.stringify({ error: "Too many requests. Please slow down." }), {
         status: 429,

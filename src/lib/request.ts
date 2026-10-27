@@ -13,12 +13,15 @@ export function clientIpFrom(headers: Headers, trustProxy = process.env.TRUST_PR
   return hops[hops.length - 1] ?? null;
 }
 
-let warned = false;
-/** Logs once in production when per-IP rate limiting is disabled. */
-export function warnIfProxyUntrusted() {
-  if (warned || process.env.NODE_ENV !== "production" || process.env.TRUST_PROXY === "true") return;
-  warned = true;
-  console.warn("[security] TRUST_PROXY is not set: per-IP rate limits are disabled. Set TRUST_PROXY=true behind a proxy/platform that overwrites X-Real-IP / X-Forwarded-For.");
+/**
+ * Rate-limit key for the current client. With a trusted IP each client gets its own
+ * bucket; without one (local development — production refuses to start without
+ * TRUST_PROXY, see instrumentation.ts) everyone shares a coarse fallback bucket with
+ * a larger budget, so limits never fail open and one client can't trivially starve others.
+ */
+export function clientBucket(headers: Headers, limit: number): { key: string; limit: number } {
+  const ip = clientIpFrom(headers);
+  return ip ? { key: `ip:${ip}`, limit } : { key: "ip:unknown", limit: limit * 20 };
 }
 
 /** Only same-site relative paths are allowed as post-login redirects. */

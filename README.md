@@ -185,7 +185,7 @@ Accessibility: semantic landmarks, skip link, labelled controls, visible focus r
 Any Node.js host works: Vercel, Render, Railway, Fly.io, or a VPS with Docker.
 
 1. Provision PostgreSQL (Neon, Supabase, RDS…) and optionally Meilisearch Cloud, S3/R2 and SMTP.
-2. Set the environment variables (production `AUTH_SECRET`; **remove `mock` from `PAYMENT_PROVIDERS`**).
+2. Set the environment variables (production `AUTH_SECRET`; **remove `mock` from `PAYMENT_PROVIDERS`**; `TRUST_PROXY=true` — required, the server refuses to start without it, so deploy behind a platform or proxy that sets `X-Real-IP`).
 3. Build and migrate: `npm ci && npx prisma migrate deploy && npm run build`, then `npm start`.
 4. Schedule `POST /api/jobs/run` every minute (Vercel Cron, GitHub Actions, or `npm run jobs:work` as a separate process).
 5. Configure the Stripe webhook and run `npm run search:reindex` once.

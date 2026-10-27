@@ -6,19 +6,19 @@ import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
-import { clientIpFrom, safeNextPath } from "@/lib/request";
+import { clientBucket, safeNextPath } from "@/lib/request";
 import { fieldErrors, loginSchema, registerSchema, type ActionResult } from "@/lib/validation";
 
-/** True when the per-IP budget is exhausted; unknown IPs are not IP-limited (see lib/request). */
-async function ipLimited(action: string, limit: number) {
-  const ip = clientIpFrom(await headers());
-  return ip ? !rateLimit(`${action}:${ip}`, limit, 60_000).ok : false;
+/** True when this client's budget for `action` is exhausted (shared fallback when the IP is unknown). */
+async function clientLimited(action: string, limit: number, windowMs = 60_000) {
+  const bucket = clientBucket(await headers(), limit);
+  return !rateLimit(`${action}:${bucket.key}`, bucket.limit, windowMs).ok;
 }
 
 const safeNext = (next: unknown) => safeNextPath(next);
 
 export async function loginAction(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (await ipLimited("login", 10)) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
+  if (await clientLimited("login", 10)) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Check the highlighted fields.", fields: fieldErrors(parsed.error) };
   try {
@@ -31,7 +31,7 @@ export async function loginAction(_: ActionResult | null, formData: FormData): P
 }
 
 export async function registerAction(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  if (await ipLimited("register", 5)) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
+  if (await clientLimited("register", 5) || (await clientLimited("register-hour", 20, 3_600_000))) return { ok: false, error: "Too many attempts. Please wait a minute and try again." };
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: "Check the highlighted fields.", fields: fieldErrors(parsed.error) };
   const exists = await db.user.findUnique({ where: { email: parsed.data.email } });

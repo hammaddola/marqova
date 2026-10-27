@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { rateLimit, refundRateLimit } from "@/lib/rate-limit";
-import { clientIpFrom } from "@/lib/request";
+import { clientBucket } from "@/lib/request";
 import type { Role } from "@/generated/prisma/enums";
 
 declare module "next-auth" {
@@ -28,22 +28,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(raw);
         if (!parsed.success) return null;
         // Attempts are reserved synchronously before any await (no check-then-act race) and
-        // refunded on success, so only failures accumulate:
-        //  - 8 failures per email + client IP per 15 min (IP only trusted behind TRUST_PROXY);
-        //  - 20 failures per email per 15 min from anywhere. A temporary 15-minute lockout is the
-        //    deliberate trade-off against distributed guessing (see DECISIONS.md D17).
+        // refunded on success, so only failures accumulate (see DECISIONS.md D17):
+        //  - 8 failures per email + client per 15 min;
+        //  - 30 failures per client across all emails per 15 min (stops password spraying);
+        //  - 20 failures per email from anywhere per 15 min (stops distributed guessing).
         const email = parsed.data.email.toLowerCase();
-        const ip = request ? clientIpFrom(request.headers) : null;
-        const ipKey = ip ? `login-fail:${email}:${ip}` : null;
-        const emailKey = `login-fail:${email}`;
-        const byIp = ipKey ? rateLimit(ipKey, 8, 15 * 60_000).ok : true;
-        const byEmail = rateLimit(emailKey, 20, 15 * 60_000).ok;
-        if (!byIp || !byEmail) return null;
+        const window = 15 * 60_000;
+        const headers = request?.headers ?? new Headers();
+        const perEmailClient = clientBucket(headers, 8);
+        const perClient = clientBucket(headers, 30);
+        const keys = [
+          { key: `login-fail:${email}:${perEmailClient.key}`, limit: perEmailClient.limit },
+          { key: `login-fail-client:${perClient.key}`, limit: perClient.limit },
+          { key: `login-fail:${email}`, limit: 20 },
+        ];
+        const allowed = keys.map((k) => rateLimit(k.key, k.limit, window).ok);
+        const refund = () => keys.forEach((k) => refundRateLimit(k.key));
+        if (allowed.includes(false)) return null;
         const user = await db.user.findUnique({ where: { email } });
         const ok = !!user?.passwordHash && (await bcrypt.compare(parsed.data.password, user.passwordHash));
         if (!ok || !user) return null;
-        if (ipKey) refundRateLimit(ipKey);
-        refundRateLimit(emailKey);
+        refund();
         return { id: user.id, email: user.email, name: user.name, image: user.image };
       },
     }),

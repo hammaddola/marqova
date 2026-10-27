@@ -25,6 +25,7 @@ jobs:
       NEXT_PUBLIC_SITE_URL: http://localhost:3000
       JOBS_SECRET: ci-jobs-secret
       PAYMENT_PROVIDERS: mock,cod
+      TRUST_PROXY: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

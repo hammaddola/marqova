@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clientIpFrom, safeNextPath } from "@/lib/request";
+import { clientBucket, clientIpFrom, safeNextPath } from "@/lib/request";
 
 describe("safeNextPath", () => {
   it("keeps same-site paths", () => {
@@ -7,6 +7,12 @@ describe("safeNextPath", () => {
   });
   it.each(["//evil.com", "/.//evil.com", "/a/..//evil.com", "/\\evil.com", "\\\\evil.com", "https://evil.com", "/\tevil", "javascript:alert(1)", 42, undefined])("rejects %s", (bad) => {
     expect(safeNextPath(bad)).toBe("/");
+  });
+});
+
+describe("clientBucket", () => {
+  it("never fails open: unknown clients share a coarse bucket with a larger budget", () => {
+    expect(clientBucket(new Headers({ "x-real-ip": "9.9.9.9" }), 10)).toEqual({ key: "ip:unknown", limit: 200 });
   });
 });
 
