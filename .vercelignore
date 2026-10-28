@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.data
+.next
+node_modules
+src/generated
+test-results
+playwright-report
+graphify-out
+.smoke-tmp

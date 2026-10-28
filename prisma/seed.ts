@@ -14,7 +14,8 @@ import { PrismaClient, type AttributeType, type TryOnType } from "../src/generat
 import { computeTrustScore } from "../src/lib/trust-score";
 import { listingQuality } from "../src/lib/listing-quality";
 
-const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+const ca = process.env.DATABASE_CA;
+const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL, ...(ca && { ssl: { ca } }) }) });
 
 // Deterministic PRNG so every developer gets the same catalog.
 let seed = 20261027;
@@ -29,7 +30,8 @@ const pick = <T,>(xs: readonly T[]) => xs[Math.floor(rand() * xs.length)];
 const between = (a: number, b: number) => Math.round(a + rand() * (b - a));
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-const PASSWORD = "Marqova123!";
+// Set SEED_PASSWORD for any internet-facing database; the default is published in the README.
+const PASSWORD = process.env.SEED_PASSWORD || "Marqova123!";
 
 const COLORS: Record<string, string> = {
   Navy: "#1C2A40", Black: "#1A1A1A", White: "#F4F4F2", Olive: "#5B6B3A", Maroon: "#6E1F2A", Sand: "#D8C9A8",

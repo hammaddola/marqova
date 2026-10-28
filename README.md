@@ -11,6 +11,8 @@ A premium multi-vendor marketplace for **every niche** — fashion, electronics,
 
 > ⚠️ All stores, products, reviews, ratings and statistics in the seed are **fictional sample data**, clearly labelled. See [CONTENT_TODO.md](CONTENT_TODO.md).
 
+**Live demo:** https://marqova.vercel.app (Vercel + Supabase). Its seeded accounts use a private password, not the local-development one below. The road from demo to real launch is in [LAUNCH_PLAN.md](LAUNCH_PLAN.md).
+
 ---
 
 ## Contents
@@ -121,6 +123,8 @@ All variables are documented in [`.env.example`](.env.example). Summary:
 | Variable | Purpose |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
+| `DATABASE_CA` | Root CA PEM for databases with a private CA (Supabase) — TLS stays verified |
+| `SEED_PASSWORD` | Password for seeded accounts; set it for any internet-facing database |
 | `NEXT_PUBLIC_SITE_URL` | Public base URL (metadata, sitemap, emails, Stripe redirects) |
 | `AUTH_SECRET`, `AUTH_TRUST_HOST` | Auth.js session encryption |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Optional Google sign-in (button hidden when empty) |

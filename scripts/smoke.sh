@@ -3,7 +3,7 @@
 # Usage: BASE=http://localhost:3000 bash scripts/smoke.sh
 set -u
 BASE="${BASE:-http://localhost:3000}"
-PASS="Marqova123!"
+PASS="${SEED_PASSWORD:-Marqova123!}"
 TMP=".smoke-tmp"; mkdir -p "$TMP"
 fail=0
 

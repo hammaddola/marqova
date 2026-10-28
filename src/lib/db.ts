@@ -5,7 +5,9 @@ import { PrismaClient } from "@/generated/prisma/client";
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 function createClient() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+  // DATABASE_CA: PEM of a private root CA (e.g. Supabase) so TLS stays fully verified.
+  const ca = process.env.DATABASE_CA;
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL, ...(ca && { ssl: { ca } }) });
   return new PrismaClient({ adapter });
 }
 
