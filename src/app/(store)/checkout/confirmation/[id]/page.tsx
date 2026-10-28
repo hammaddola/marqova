@@ -44,11 +44,18 @@ export default async function ConfirmationPage({ params, searchParams }: PagePro
       <Reveal>
         <div className="text-center">
           {pending ? <Clock className="mx-auto size-14 text-gold-text" aria-hidden /> : <CheckCircle2 className="mx-auto size-14 text-emerald" aria-hidden />}
-          <h1 className="heading-display mt-4 text-3xl">{pending ? "Waiting for payment confirmation" : "Thank you — your order is placed"}</h1>
+          <h1 className="heading-display mt-4 text-3xl">
+            {order.isSample ? "Preview order received" : pending ? "Waiting for payment confirmation" : "Thank you — your order is placed"}
+          </h1>
           <p className="mt-2 text-slate">
             Order <strong className="text-ink">{order.number}</strong>
-            {order.paymentMethod === "cod" && " · Pay in cash on delivery"}
+            {order.paymentMethod === "cod" && !order.isSample && " · Pay in cash on delivery"}
           </p>
+          {order.isSample && (
+            <p role="note" className="mx-auto mt-4 max-w-xl rounded-[8px] border border-gold-500/40 bg-gold-100/60 px-4 py-3 text-sm">
+              This order contains preview items, so nothing will be shipped and you won&apos;t be charged. Thanks for trying Marqova before launch.
+            </p>
+          )}
           <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-slate">
             <Mail className="size-4" aria-hidden /> A confirmation was sent to {order.email}
           </p>

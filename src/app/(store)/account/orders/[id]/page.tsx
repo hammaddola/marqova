@@ -33,7 +33,11 @@ export default async function OrderDetailPage({ params }: PageProps<"/account/or
         <div>
           <Link href="/account/orders" className="text-sm text-gold-text hover:underline">← All orders</Link>
           <h1 className="heading-display mt-1 text-3xl">Order {order.number}</h1>
-          <p className="text-sm text-slate">Placed {formatDate(order.createdAt)} · {order.paymentMethod === "cod" ? "Cash on delivery" : "Paid online"}</p>
+          <p className="text-sm text-slate">
+            {order.isSample
+              ? `Preview order placed ${formatDate(order.createdAt)} · not shipped or charged`
+              : `Placed ${formatDate(order.createdAt)} · ${order.paymentMethod === "cod" ? "Cash on delivery" : "Paid online"}`}
+          </p>
         </div>
         <StatusPill status={order.status} />
       </div>

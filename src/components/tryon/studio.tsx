@@ -273,6 +273,10 @@ export function Studio({ products, initialProductId, savedAvatar, signedIn }: { 
                   <p className="mt-3 rounded-md bg-navy-900 p-3 text-sm" aria-live="polite">
                     {fitAdvice(focus.fit)} {focus.rec && focus.rec !== focus.chosen ? `We recommend ${focus.rec} for your measurements.` : ""}
                   </p>
+                  <p className="mt-2 text-[11px] leading-relaxed text-white/50">
+                    An estimate from your height, weight and shape compared with this product&apos;s size chart, not a guarantee. If it doesn&apos;t fit, the
+                    product&apos;s return window applies.
+                  </p>
                 </>
               )}
               <Button

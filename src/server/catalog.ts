@@ -162,7 +162,8 @@ export async function getDeals(limit = 12) {
 export async function getBestsellers(limit = 12, categoryIds?: string[]) {
   const rows = await db.product.findMany({
     where: { ...ACTIVE, ...(categoryIds ? { categoryId: { in: categoryIds } } : {}) },
-    orderBy: [{ salesCount: "desc" }, { ratingAvg: "desc" }],
+    // Real orders first; until there are any, the most complete listings lead.
+    orderBy: [{ salesCount: "desc" }, { ratingAvg: "desc" }, { qualityScore: "desc" }],
     take: limit,
     select: productCardSelect,
   });

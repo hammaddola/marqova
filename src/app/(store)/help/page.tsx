@@ -225,15 +225,23 @@ export default function HelpPage() {
             </section>
           ))}
 
-          <section className="rounded-[8px] bg-navy-900 p-6 text-white md:p-8">
+          <section id="contact" className="scroll-mt-28 rounded-[8px] bg-navy-900 p-6 text-white md:p-8">
             <h2 className="heading-display text-2xl">Still need help?</h2>
             <p className="mt-2 max-w-xl text-white/75">
-              For questions about an order, open the item from your order, choose “Visit” with the store&apos;s name, and message the seller from their store page. Every store shows its
-              typical response time, and that time counts towards its Trust Score.
+              {MULTI_SELLER
+                ? "For questions about an order, open the item from your order, choose “Visit” with the store’s name, and message the seller from their store page. Every store shows its typical response time, and that time counts towards its Trust Score."
+                : "Message us from the Marqova store page with “Contact seller” (you'll need to sign in). Replies arrive in Messages in your account, and our typical response time is shown on the store page."}
             </p>
-            <Link href="/account/messages" className="mt-4 inline-block font-semibold text-gold-500 underline underline-offset-2">
-              Go to your messages
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+              {!MULTI_SELLER && (
+                <Link href="/store/marqova" className="font-semibold text-gold-500 underline underline-offset-2">
+                  Message Marqova
+                </Link>
+              )}
+              <Link href="/account/messages" className="font-semibold text-gold-500 underline underline-offset-2">
+                Go to your messages
+              </Link>
+            </div>
           </section>
         </div>
       </div>

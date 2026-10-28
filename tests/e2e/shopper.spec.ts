@@ -16,11 +16,16 @@ test("search with filters returns matching products", async ({ page }) => {
   await expect(page.locator("article").first()).toBeVisible();
 });
 
-test("guest can buy with the test payment method and gets a confirmation", async ({ page }) => {
+test("guest checkout on a preview item is clearly a preview order", async ({ page }) => {
   await page.goto("/search?q=shirt");
   await page.locator("article h3 a").first().click();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByText("Total, no hidden fees")).toBeVisible();
+  // Preview listings say so, stay out of search engines and never publish a live offer.
+  await expect(page.getByText("Preview listing.")).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  const ld = await page.locator('script[type="application/ld+json"]').first().textContent();
+  expect(ld).not.toContain('"offers"');
   await page.getByRole("button", { name: "Buy Now" }).first().click();
   await page.waitForURL("**/checkout");
 
@@ -35,7 +40,8 @@ test("guest can buy with the test payment method and gets a confirmation", async
   await page.getByRole("button", { name: /Place order/ }).click();
 
   await page.waitForURL("**/checkout/confirmation/**");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("order is placed");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Preview order received");
+  await expect(page.getByText(/nothing will be shipped and you won.t be charged/)).toBeVisible();
   await expect(page.getByText(/Order MQ-/)).toBeVisible();
 });
 

@@ -176,8 +176,8 @@ export default async function HomePage() {
 
         {/* Recommended */}
         <section>
-          <SectionHeading title="Recommended for you" subtitle="Popular with shoppers like you, ranked by verified reviews and sales." action={<TrendingUp className="size-5 text-gold-text" aria-hidden />} />
-          <ProductRail products={recommended} label="Recommended for you" />
+          <SectionHeading title="Featured products" subtitle="Ranked by real orders, then by how complete each listing is." action={<TrendingUp className="size-5 text-gold-text" aria-hidden />} />
+          <ProductRail products={recommended} label="Featured products" />
         </section>
 
         <RecentlyViewed />

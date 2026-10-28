@@ -40,7 +40,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/account/o
                 {formatPrice(o.total)}
               </span>
               <span className="ml-auto">
-                <span className="block text-slate uppercase">Order</span>
+                <span className="block text-slate uppercase">{o.isSample ? "Preview order" : "Order"}</span>
                 {o.number}
               </span>
               <Link href={`/account/orders/${o.id}`} className="font-semibold text-gold-text hover:underline">

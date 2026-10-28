@@ -23,9 +23,9 @@ export async function markOrderPlaced(orderId: string) {
     "email.send",
     {
       to: order.email,
-      subject: `Order ${order.number} confirmed`,
+      subject: order.isSample ? `Preview order ${order.number} received (not shipped or charged)` : `Order ${order.number} confirmed`,
       html: layoutEmail(
-        "Thank you — your order is confirmed",
+        order.isSample ? "Preview order received — nothing will be shipped or charged" : "Thank you — your order is confirmed",
         `<p>Order <strong>${order.number}</strong>${eta ? ` · estimated delivery ${eta}` : ""}</p><table width="100%" style="font-size:14px">${rows}
 <tr><td style="padding-top:10px;border-top:1px solid #E6E1D6">Delivery</td><td align="right" style="padding-top:10px;border-top:1px solid #E6E1D6">${formatPrice(order.shippingTotal)}</td></tr>
 ${order.discountTotal ? `<tr><td>Discount</td><td align="right">−${formatPrice(order.discountTotal)}</td></tr>` : ""}

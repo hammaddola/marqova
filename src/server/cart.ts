@@ -75,7 +75,7 @@ export async function getCartView(deliveryId?: string | null) {
             include: {
               product: {
                 select: {
-                  id: true, slug: true, title: true, status: true, shippingFee: true, storeId: true, deliveryMinDays: true, deliveryMaxDays: true, returnWindowDays: true,
+                  id: true, slug: true, title: true, status: true, shippingFee: true, storeId: true, deliveryMinDays: true, deliveryMaxDays: true, returnWindowDays: true, isSample: true,
                   store: { select: { name: true, slug: true } },
                   media: { where: { type: "IMAGE" }, orderBy: { position: "asc" }, take: 1, select: { url: true, alt: true } },
                 },

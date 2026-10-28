@@ -46,6 +46,7 @@ export async function generateMetadata({ params }: PageProps<"/p/[slug]">): Prom
     description,
     alternates: { canonical: `/p/${p.slug}` },
     openGraph: { title: p.title, description, url: `/p/${p.slug}`, images: image ? [{ url: image }] : undefined },
+    ...(p.isSample && { robots: { index: false } }),
   };
 }
 
@@ -139,7 +140,8 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
     sku: p.variants[0]?.sku,
     brand: p.brand ? { "@type": "Brand", name: p.brand } : undefined,
     image: image ? [image.startsWith("/") ? siteUrl(image) : image] : undefined,
-    offers: {
+    // Preview listings aren't for sale: never publish their price, stock or rating as a live offer.
+    offers: p.isSample ? undefined : {
       "@type": "AggregateOffer",
       priceCurrency: "PKR",
       lowPrice: (Math.min(...p.variants.map((v) => v.price)) / 100).toFixed(0),
@@ -149,7 +151,7 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
       seller: { "@type": "Organization", name: p.store.name },
       url: siteUrl(`/p/${p.slug}`),
     },
-    aggregateRating: p.ratingCount ? { "@type": "AggregateRating", ratingValue: p.ratingAvg.toFixed(1), reviewCount: p.ratingCount } : undefined,
+    aggregateRating: p.ratingCount && !p.isSample ? { "@type": "AggregateRating", ratingValue: p.ratingAvg.toFixed(1), reviewCount: p.ratingCount } : undefined,
   };
   const breadcrumbLd = {
     "@context": "https://schema.org",
@@ -194,12 +196,17 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
                 ) : (
                   <span className="text-slate">No reviews yet</span>
                 )}
-                {productTrust && <TrustBadge score={productTrust.score} inputs={productTrust} subject="product" />}
+                {productTrust && <TrustBadge score={productTrust.score} inputs={productTrust} subject="product" preview={p.isSample} />}
               </div>
             </div>
             <div className="border-y border-sand py-4">
               <VariantPrice />
               <p className="mt-1 text-xs text-slate">Price includes all taxes. Delivery cost and date shown before you add to cart.</p>
+              {p.isSample && (
+                <p className="mt-3 rounded-[8px] border border-gold-500/40 bg-gold-100/60 px-3 py-2 text-xs">
+                  <strong>Preview listing.</strong> This item isn&apos;t for sale yet. Price, stock and delivery dates show how a live listing will look, and orders aren&apos;t shipped or charged.
+                </p>
+              )}
             </div>
             <VariantPickers recommendedSize={recommended} sizeGuide={chart ? <SizeGuide chart={chart} productId={p.id} /> : undefined} />
             {apparel && !avatar && (
@@ -253,7 +260,7 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
                 <span className="flex items-center gap-1.5 font-medium">
                   <BadgeCheck className="size-4 text-emerald" aria-hidden /> Seller trust
                 </span>
-                <TrustBadge score={storeTrust.score} inputs={storeTrust} />
+                <TrustBadge score={storeTrust.score} inputs={storeTrust} preview={p.isSample} />
               </div>
             )}
           </aside>

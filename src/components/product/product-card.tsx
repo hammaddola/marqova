@@ -94,7 +94,7 @@ export function ProductCard({ p, layout = "grid", priority }: { p: ProductCardDa
         <Price value={p.price} compareAt={p.compareAtPrice} size="md" />
         {delivery}
         <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-          {p.trust != null && <TrustPill score={p.trust} />}
+          {p.trust != null && !p.isSample && <TrustPill score={p.trust} />}
           {!p.inStock && <span className="text-xs font-semibold text-crimson">Out of stock</span>}
         </div>
       </div>

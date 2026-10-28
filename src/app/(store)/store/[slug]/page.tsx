@@ -49,7 +49,7 @@ export default async function StorePage({ params }: PageProps<"/store/[slug]">) 
                     </Badge>
                   )}
                   <Badge tone="gold" className="capitalize">{store.seller.tier.toLowerCase()} seller</Badge>
-                  {store.trustScore && <TrustBadge score={store.trustScore.score} inputs={store.trustScore} />}
+                  {store.trustScore && <TrustBadge score={store.trustScore.score} inputs={store.trustScore} preview={store.isSample} />}
                   {store.isSample && <Badge tone="outline" className="border-white/30 text-white/80">Preview store</Badge>}
                 </div>
               </div>

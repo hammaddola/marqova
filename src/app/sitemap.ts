@@ -10,8 +10,8 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [categories, products, stores] = await Promise.all([
     db.category.findMany({ where: { isActive: true }, select: { slug: true } }),
-    db.product.findMany({ where: { status: "ACTIVE" }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 45_000 }),
-    db.store.findMany({ where: { seller: { status: "APPROVED" } }, select: { slug: true } }),
+    db.product.findMany({ where: { status: "ACTIVE", isSample: false }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: "desc" }, take: 45_000 }),
+    db.store.findMany({ where: { seller: { status: "APPROVED" }, isSample: false }, select: { slug: true } }),
   ]);
   return [
     { url: siteUrl("/"), changeFrequency: "daily", priority: 1 },

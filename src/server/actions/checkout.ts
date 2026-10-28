@@ -51,6 +51,8 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
           discountTotal: totals.discount,
           total: totals.total,
           couponCode: totals.couponApplied,
+          // Any preview item makes this a preview order: never shipped, never charged.
+          isSample: view.purchasable.some((l) => l.product.isSample),
           deliveryOption: totals.delivery.id,
           paymentMethod: provider.id,
           shippingAddress: input.address,

@@ -7,7 +7,7 @@ const COLUMNS = [
   { title: "Get to know us", links: [["About Marqova", "/about"], ["Our promises", "/about#promises"], ["Trust Score explained", "/legal/trust-score"]] },
   { title: "Shop", links: [["Today's Deals", "/deals"], ["Try-On Studio", "/try-on"], ["All categories", "/search"]] },
   { title: "Sell", links: [["Sell on Marqova", "/sell"], ["Seller Hub", "/seller"], ["Seller agreement", "/legal/seller-agreement"], ["Fee calculator", "/sell"]] },
-  { title: "Help", links: [["Help centre", "/help"], ["Your orders", "/account/orders"], ["Returns policy", "/legal/returns"], ["Privacy", "/legal/privacy"], ["Terms of use", "/legal/terms"]] },
+  { title: "Help", links: [["Help centre", "/help"], ["Contact us", "/help#contact"], ["Your orders", "/account/orders"], ["Returns policy", "/legal/returns"], ["Privacy", "/legal/privacy"], ["Terms of use", "/legal/terms"]] },
 ];
 
 export function Footer() {

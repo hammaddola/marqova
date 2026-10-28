@@ -134,7 +134,7 @@ function sortToOrder(sort: SortKey | undefined, hasQuery: boolean): Prisma.Produ
     case "trust":
       return [{ trustScore: { score: "desc" } }, { salesCount: "desc" }];
     case "bestsellers":
-      return [{ salesCount: "desc" }];
+      return [{ salesCount: "desc" }, { qualityScore: "desc" }];
     default:
       return hasQuery ? [{ salesCount: "desc" }, { ratingAvg: "desc" }] : [{ qualityScore: "desc" }, { salesCount: "desc" }];
   }
