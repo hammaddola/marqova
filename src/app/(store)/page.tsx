@@ -11,6 +11,7 @@ import { RecentlyViewed } from "@/components/home/recently-viewed";
 import { getBestsellers, getCategoryTree, getDeals } from "@/server/catalog";
 import { jsonLd } from "@/lib/seo";
 import { db } from "@/lib/db";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 export default async function HomePage() {
   const [tree, deals, recommended, sections] = await Promise.all([getCategoryTree(), getDeals(14), getBestsellers(16), db.homeSection.findMany({ where: { active: true }, orderBy: { position: "asc" }, take: 4 })]);
@@ -35,7 +36,7 @@ export default async function HomePage() {
         <div className="container-page relative grid items-center gap-10 py-14 md:grid-cols-[1.1fr_1fr] md:py-20 lg:py-24">
           <div className="animate-fade-up">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-gold-500/40 bg-white/5 px-3 py-1 text-xs font-medium text-gold-300">
-              <Sparkles className="size-3.5" aria-hidden /> Every niche. Verified sellers. Honest prices.
+              <Sparkles className="size-3.5" aria-hidden /> {MULTI_SELLER ? "Every niche. Verified sellers. Honest prices." : "Every niche. Real reviews. Honest prices."}
             </p>
             <h1 className="font-display text-[40px] leading-[1.05] font-semibold tracking-tight sm:text-5xl lg:text-[64px]">
               See it. <span className="text-gold-500">Trust</span> it.
@@ -66,7 +67,7 @@ export default async function HomePage() {
       <section aria-label="Why shop on Marqova" className="border-b border-sand bg-white">
         <Stagger className="container-page grid grid-cols-2 gap-4 py-5 md:grid-cols-4">
           {[
-            [BadgeCheck, "Verified sellers", "ID & business checked"],
+            MULTI_SELLER ? [BadgeCheck, "Verified sellers", "ID & business checked"] : [BadgeCheck, "Sold by Marqova", "One store answers for every order"],
             [ShieldCheck, "Real reviews only", "Delivered orders only"],
             [Receipt, "Full price upfront", "Delivery shown on every card"],
             [RotateCcw, "Easy returns", "Clear policy on every item"],
@@ -182,6 +183,7 @@ export default async function HomePage() {
         <RecentlyViewed />
 
         {/* Seller CTA */}
+        {MULTI_SELLER && (
         <Reveal>
           <section className="grid items-center gap-8 rounded-[12px] border border-sand bg-white p-8 md:grid-cols-[1.4fr_1fr] md:p-12">
             <div>
@@ -213,6 +215,7 @@ export default async function HomePage() {
             </ul>
           </section>
         </Reveal>
+        )}
       </div>
     </>
   );

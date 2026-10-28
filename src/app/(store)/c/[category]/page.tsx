@@ -7,13 +7,14 @@ import { parseSearchParams } from "@/lib/search-params";
 import { categoryWithDescendants } from "@/server/catalog";
 import { jsonLd } from "@/lib/seo";
 import { siteUrl } from "@/lib/utils";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 export async function generateMetadata({ params }: PageProps<"/c/[category]">): Promise<Metadata> {
   const { category } = await params;
   const cat = await categoryWithDescendants(category);
   if (!cat) return { title: "Category not found" };
-  const title = `${cat.node.name} — shop verified sellers`;
-  const description = `Shop ${cat.node.name.toLowerCase()} on Marqova: verified sellers, real reviews, full prices with delivery shown upfront.`;
+  const title = MULTI_SELLER ? `${cat.node.name} — shop verified sellers` : `Shop ${cat.node.name}`;
+  const description = `Shop ${cat.node.name.toLowerCase()} on Marqova: ${MULTI_SELLER ? "verified sellers, " : ""}real reviews, full prices with delivery shown upfront.`;
   return { title, description, alternates: { canonical: `/c/${cat.node.slug}` }, openGraph: { title, description, url: `/c/${cat.node.slug}` } };
 }
 

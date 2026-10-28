@@ -125,6 +125,8 @@ All variables are documented in [`.env.example`](.env.example). Summary:
 | `DATABASE_URL` | PostgreSQL connection string |
 | `DATABASE_CA` | Root CA PEM for databases with a private CA (Supabase) — TLS stays verified |
 | `SEED_PASSWORD` | Password for seeded accounts; set it for any internet-facing database |
+| `SEED_SAMPLE_REVIEWS` | `true` seeds labelled sample reviews and Q&A for local UI work only |
+| `NEXT_PUBLIC_MARKETPLACE_MODE` | `single` (default): one store run by the owner, seller sign-up closed. `multi`: open marketplace. Reseed after changing |
 | `NEXT_PUBLIC_SITE_URL` | Public base URL (metadata, sitemap, emails, Stripe redirects) |
 | `AUTH_SECRET`, `AUTH_TRUST_HOST` | Auth.js session encryption |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Optional Google sign-in (button hidden when empty) |

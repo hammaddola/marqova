@@ -5,8 +5,8 @@ import { Popover } from "radix-ui";
 import { MapPin, Check } from "lucide-react";
 import { setDeliveryCity } from "@/server/actions/preferences";
 import { cn } from "@/lib/utils";
+import { CITIES } from "@/lib/pakistan";
 
-const CITIES = ["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Multan", "Peshawar", "Quetta", "Sialkot", "Hyderabad", "Gilgit", "Skardu"];
 
 export function DeliverTo({ city, className }: { city: string; className?: string }) {
   const [pending, start] = useTransition();

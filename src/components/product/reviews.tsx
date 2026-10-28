@@ -49,6 +49,17 @@ export function Reviews({ reviews, summary, avg, total, apparel }: { reviews: Re
     [reviews, stars, photosOnly, fit, topic],
   );
 
+  if (!total)
+    return (
+      <div className="max-w-2xl rounded-[8px] border border-sand bg-sand-50 p-6">
+        <p className="font-semibold">No reviews yet</p>
+        <p className="mt-1 text-sm leading-relaxed text-slate">
+          Only shoppers whose order has been delivered can review this item, so every review you see here will come from a real buyer. Bought it?
+          Choose “Write a review” on the order in your account.
+        </p>
+      </div>
+    );
+
   return (
     <div className="grid gap-10 lg:grid-cols-[300px_1fr]">
       <div className="space-y-6">

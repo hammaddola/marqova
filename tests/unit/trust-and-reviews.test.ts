@@ -17,6 +17,9 @@ describe("Trust Score", () => {
     expect(c.returns).toBe(15);
     expect(c.reviews).toBe(25);
   });
+  it("gives sellers with no ratings yet neutral half credit, not an invented rating", () => {
+    expect(trustComponents({ onTimeRate: 1, returnRate: 0, cancelRate: 0, reviewRating: 0, responseHours: 1 }).reviews).toBe(12.5);
+  });
   it("labels scores", () => {
     expect(trustLabel(90)).toBe("Excellent");
     expect(trustLabel(72)).toBe("Good");

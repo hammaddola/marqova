@@ -10,6 +10,7 @@ import { getCartView } from "@/server/cart";
 import { getBestsellers } from "@/server/catalog";
 import { FREE_DELIVERY_THRESHOLD } from "@/lib/delivery";
 import { formatPrice } from "@/lib/utils";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 export const metadata: Metadata = { title: "Your cart", robots: { index: false } };
 
@@ -21,7 +22,7 @@ export default async function CartPage() {
     const picks = await getBestsellers(10);
     return (
       <div className="container-page space-y-12 py-10">
-        <EmptyState icon={<ShoppingCart />} title="Your cart is empty" body="Browse every niche from verified sellers — prices always include the delivery estimate." action={<Button asChild variant="gold"><Link href="/search">Start shopping</Link></Button>} />
+        <EmptyState icon={<ShoppingCart />} title="Your cart is empty" body={`Browse every niche${MULTI_SELLER ? " from verified sellers" : ""} — prices always include the delivery estimate.`} action={<Button asChild variant="gold"><Link href="/search">Start shopping</Link></Button>} />
         <ProductRail products={picks} label="Popular right now" />
       </div>
     );

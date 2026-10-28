@@ -46,13 +46,6 @@ export const LEGAL_DOCS: Record<string, Doc> = {
       { heading: "Buyer Protection", body: ["If an item doesn't arrive or is significantly not as described, Marqova Buyer Protection guarantees a full refund."] },
     ],
   },
-  about: {
-    title: "About Marqova",
-    template: false,
-    sections: [
-      { heading: "See it. Trust it. Own it.", body: ["Marqova is a marketplace for every niche, built on three ideas: show products clearly (3D and try-on), make trust measurable (Trust Score and verified-only reviews) and show the full price upfront."] },
-    ],
-  },
   "trust-score": {
     title: "How the Trust Score works",
     template: false,

@@ -6,7 +6,7 @@ export type TrustInputs = {
   onTimeRate: number; // 0..1 share of orders delivered by the promised date
   returnRate: number; // 0..1
   cancelRate: number; // 0..1
-  reviewRating: number; // 0..5 average from verified buyers
+  reviewRating: number; // 1..5 average from verified buyers; 0 = no ratings yet
   responseHours: number; // median first response time
 };
 
@@ -21,7 +21,8 @@ export function trustComponents(i: TrustInputs) {
     returns: clamp01(1 - i.returnRate / 0.2) * TRUST_WEIGHTS.returns,
     // A 10% cancellation rate or worse scores zero.
     cancellations: clamp01(1 - i.cancelRate / 0.1) * TRUST_WEIGHTS.cancellations,
-    reviews: clamp01((i.reviewRating - 1) / 4) * TRUST_WEIGHTS.reviews,
+    // No ratings yet earns neutral half credit: new sellers are neither punished nor flattered.
+    reviews: (i.reviewRating > 0 ? clamp01((i.reviewRating - 1) / 4) : 0.5) * TRUST_WEIGHTS.reviews,
     // Within 2h is perfect; 72h or slower scores zero.
     response: clamp01(1 - (i.responseHours - 2) / 70) * TRUST_WEIGHTS.response,
   };

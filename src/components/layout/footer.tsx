@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ShieldCheck, BadgeCheck, Receipt, RotateCcw } from "lucide-react";
 import { Logo } from "@/components/brand";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 const COLUMNS = [
-  { title: "Get to know us", links: [["About Marqova", "/legal/about"], ["Trust Score explained", "/legal/trust-score"], ["Careers", "/legal/about"]] },
+  { title: "Get to know us", links: [["About Marqova", "/about"], ["Our promises", "/about#promises"], ["Trust Score explained", "/legal/trust-score"]] },
   { title: "Shop", links: [["Today's Deals", "/deals"], ["Try-On Studio", "/try-on"], ["All categories", "/search"]] },
-  { title: "Sell", links: [["Sell on Marqova", "/sell"], ["Seller Hub", "/seller"], ["Seller agreement", "/legal/seller-agreement"], ["Fee calculator", "/seller/payouts"]] },
-  { title: "Help", links: [["Your orders", "/account/orders"], ["Returns policy", "/legal/returns"], ["Privacy", "/legal/privacy"], ["Terms of use", "/legal/terms"]] },
+  { title: "Sell", links: [["Sell on Marqova", "/sell"], ["Seller Hub", "/seller"], ["Seller agreement", "/legal/seller-agreement"], ["Fee calculator", "/sell"]] },
+  { title: "Help", links: [["Help centre", "/help"], ["Your orders", "/account/orders"], ["Returns policy", "/legal/returns"], ["Privacy", "/legal/privacy"], ["Terms of use", "/legal/terms"]] },
 ];
 
 export function Footer() {
@@ -15,7 +16,7 @@ export function Footer() {
       <div className="border-b border-white/10">
         <div className="container-page grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
           {[
-            [BadgeCheck, "Verified sellers", "Every store is checked"],
+            MULTI_SELLER ? [BadgeCheck, "Verified sellers", "Every store is checked"] : [BadgeCheck, "Sold by Marqova", "One store answers for every order"],
             [ShieldCheck, "Real reviews only", "From delivered orders"],
             [Receipt, "Full price upfront", "No surprises at checkout"],
             [RotateCcw, "Easy returns", "Clear policy on every item"],
@@ -33,12 +34,12 @@ export function Footer() {
           })}
         </div>
       </div>
-      <div className="container-page grid gap-10 py-12 md:grid-cols-[1.3fr_repeat(4,1fr)]">
+      <div className={`container-page grid gap-10 py-12 ${MULTI_SELLER ? "md:grid-cols-[1.3fr_repeat(4,1fr)]" : "md:grid-cols-[1.3fr_repeat(3,1fr)]"}`}>
         <div>
           <Logo dark />
-          <p className="mt-3 max-w-xs text-sm text-white/70">See it. Trust it. Own it. A marketplace for every niche, built on verified sellers and honest prices.</p>
+          <p className="mt-3 max-w-xs text-sm text-white/70">See it. Trust it. Own it. Shopping for every niche, built on real reviews and honest prices.</p>
         </div>
-        {COLUMNS.map((col) => (
+        {COLUMNS.filter((col) => MULTI_SELLER || col.title !== "Sell").map((col) => (
           <div key={col.title}>
             <p className="mb-3 text-sm font-semibold">{col.title}</p>
             <ul className="space-y-2">
@@ -55,7 +56,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-2 py-5 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
-          <p>© {new Date().getFullYear()} Marqova. Sample data shown for demonstration.</p>
+          <p>© {new Date().getFullYear()} Marqova</p>
           <p>Prices in Pakistani rupees (Rs) and include all fees shown at checkout.</p>
         </div>
       </div>

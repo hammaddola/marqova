@@ -1,4 +1,12 @@
 import { z } from "zod";
+import { PK_POSTAL_CODE, PROVINCES, normalizePkPhone } from "@/lib/pakistan";
+
+// Pakistan only: numbers are stored normalised to +92 form.
+const pkPhone = z
+  .string()
+  .trim()
+  .refine((v) => normalizePkPhone(v) !== null, "Enter a Pakistani number, e.g. 0300 1234567")
+  .transform((v) => normalizePkPhone(v)!);
 
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Enter your name").max(80),
@@ -19,13 +27,13 @@ export const loginSchema = z.object({
 export const addressSchema = z.object({
   label: z.string().trim().max(30).default("Home"),
   fullName: z.string().trim().min(2, "Enter the recipient's name").max(80),
-  phone: z.string().trim().regex(/^[+\d][\d\s-]{6,18}$/, "Enter a valid phone number"),
+  phone: pkPhone,
   line1: z.string().trim().min(3, "Enter a street address").max(120),
   line2: z.string().trim().max(120).optional().default(""),
   city: z.string().trim().min(2, "Enter a city").max(60),
-  region: z.string().trim().min(2, "Enter a province / region").max(60),
-  postalCode: z.string().trim().min(3, "Enter a postal code").max(12),
-  country: z.string().trim().length(2).default("PK"),
+  region: z.string().refine((v) => (PROVINCES as readonly string[]).includes(v), "Choose a province or territory"),
+  postalCode: z.string().trim().regex(PK_POSTAL_CODE, "Enter a 5-digit postal code"),
+  country: z.string().default("PK").refine((v) => v.toUpperCase() === "PK", "We deliver within Pakistan only"),
 });
 
 export const checkoutSchema = z.object({
@@ -63,7 +71,7 @@ export const sellerApplicationSchema = z.object({
   legalName: z.string().trim().min(2, "Enter your legal name").max(120),
   businessName: z.string().trim().max(120).optional().default(""),
   registrationNumber: z.string().trim().max(60).optional().default(""),
-  phone: z.string().trim().regex(/^[+\d][\d\s-]{6,18}$/, "Enter a valid phone number"),
+  phone: pkPhone,
   storeName: z.string().trim().min(3, "Store name is too short").max(60),
   bankAccountName: z.string().trim().min(2, "Enter the account holder").max(120),
   bankName: z.string().trim().min(2, "Enter the bank").max(80),

@@ -20,7 +20,7 @@ export function AssistantWidget() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "Hi! I'm the Marqova assistant. Describe what you're looking for in plain words — I'll search verified sellers, help with sizing and track orders." },
+    { role: "assistant", content: "Hi! I'm the Marqova assistant. Describe what you're looking for in plain words — I'll search the catalog, help with sizing and track orders." },
   ]);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

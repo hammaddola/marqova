@@ -29,7 +29,7 @@ test("guest can buy with the test payment method and gets a confirmation", async
   await page.getByLabel("Phone").fill("+92 300 1234567");
   await page.getByLabel("Street address").fill("House 1, Street 2");
   await page.getByLabel("City").fill("Karachi");
-  await page.getByLabel("Province / region").fill("Sindh");
+  await page.getByLabel("Province / territory").selectOption("Sindh");
   await page.getByLabel("Postal code").fill("75500");
   await page.getByRole("radio", { name: /Test card/ }).click();
   await page.getByRole("button", { name: /Place order/ }).click();

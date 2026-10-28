@@ -39,7 +39,7 @@ export function Gallery({ media, title, productId, tryOn }: { media: Media[]; ti
         ))}
       </div>
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div
           className="relative aspect-square cursor-zoom-in overflow-hidden rounded-[8px] border border-sand bg-sand-50"
           onMouseMove={(e) => {

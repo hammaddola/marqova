@@ -11,7 +11,7 @@ import { DEFAULT_SIZE_CHARTS, estimateBody, recommendSize, type SizeChart } from
 import { jsonLd } from "@/lib/seo";
 import { siteUrl } from "@/lib/utils";
 import { Stars } from "@/components/brand";
-import { SectionHeading, Badge } from "@/components/ui/primitives";
+import { SectionHeading } from "@/components/ui/primitives";
 import { Gallery } from "@/components/product/gallery";
 import { BuyBox, PurchaseProvider, StickyBuyBar, VariantPickers, VariantPrice, type VariantData } from "@/components/product/purchase";
 import { TrustBadge } from "@/components/product/trust-badge";
@@ -93,9 +93,18 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
   const axes = p.category.attributes.filter((a) => a.variantAxis).map((a) => ({ key: a.key, label: a.label, type: a.type }));
   const variants: VariantData[] = p.variants.map((v) => ({ id: v.id, title: v.title, options: v.options as Record<string, string>, price: v.price, compareAtPrice: v.compareAtPrice, stock: v.stock, colorHex: v.colorHex }));
   const attrs = p.attributes as Record<string, string | string[]>;
+  // jsonb stores keys sorted by length, so order rows explicitly: identity, attributes, logistics, then aftercare.
+  const attrRows = p.category.attributes.filter((a) => !a.variantAxis && attrs[a.key]).map((a) => [a.label, [attrs[a.key]].flat().join(", ") + (a.unit ? ` ${a.unit}` : "")] as [string, string]);
+  // A free-form spec that repeats an attribute (e.g. "Warranty") is shown once, as the attribute.
+  const specs = Object.entries(p.specs as Record<string, string>).filter(([k]) => !attrRows.some(([label]) => label === k));
+  const IDENTITY = ["Brand", "Model number", "Model"];
+  const AFTERCARE = ["Warranty", "Care"];
+  const byKeys = (keys: string[]) => keys.flatMap((k) => specs.filter(([key]) => key === k));
   const specRows: [string, string][] = [
-    ...Object.entries(p.specs as Record<string, string>),
-    ...p.category.attributes.filter((a) => !a.variantAxis && attrs[a.key]).map((a) => [a.label, [attrs[a.key]].flat().join(", ") + (a.unit ? ` ${a.unit}` : "")] as [string, string]),
+    ...byKeys(IDENTITY),
+    ...attrRows,
+    ...specs.filter(([k]) => !IDENTITY.includes(k) && !AFTERCARE.includes(k)),
+    ...byKeys(AFTERCARE),
   ];
   const storeTrust = p.store.trustScore;
   const productTrust = p.trustScore;
@@ -166,7 +175,7 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
 
       <PurchaseProvider variants={variants} axes={axes}>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_320px]">
-          <div className="lg:sticky lg:top-32 lg:self-start">
+          <div className="min-w-0 lg:sticky lg:top-32 lg:self-start">
             <Gallery media={p.media.map((m) => ({ id: m.id, type: m.type, url: m.url, alt: m.alt, usdzUrl: m.usdzUrl }))} title={p.title} productId={p.id} tryOn={p.tryOnType !== "NONE"} />
           </div>
 
@@ -186,7 +195,6 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
                   <span className="text-slate">No reviews yet</span>
                 )}
                 {productTrust && <TrustBadge score={productTrust.score} inputs={productTrust} subject="product" />}
-                {p.isSample && <Badge tone="outline">Sample listing</Badge>}
               </div>
             </div>
             <div className="border-y border-sand py-4">

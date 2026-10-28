@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { StatusPill } from "@/components/account/status-pill";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 export const metadata = { title: "Seller onboarding" };
 
@@ -43,6 +44,16 @@ export default async function OnboardingPage() {
       </div>
     );
   }
+
+  if (!MULTI_SELLER)
+    return (
+      <div className="max-w-2xl">
+        <PageHeader title="Seller sign-up is closed" subtitle="Marqova is run by a single seller for now. We'll open the marketplace to verified sellers later." />
+        <Button asChild variant="secondary">
+          <Link href="/">Back to the store</Link>
+        </Button>
+      </div>
+    );
 
   return (
     <div className="max-w-3xl">

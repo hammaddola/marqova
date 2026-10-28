@@ -6,6 +6,7 @@ import { getPaymentProviders } from "@/lib/providers/payment";
 import { getCartView, loadCoupon } from "@/server/cart";
 import { getSessionUser } from "@/server/session";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
+import { catalogInPreview } from "@/components/layout/preview-notice";
 
 export const metadata: Metadata = { title: "Checkout", robots: { index: false } };
 
@@ -24,6 +25,11 @@ export default async function CheckoutPage({ searchParams }: PageProps<"/checkou
   return (
     <div className="container-page py-8">
       <h1 className="heading-display mb-6 text-3xl">Checkout</h1>
+      {(await catalogInPreview()) && (
+        <p role="note" className="mb-6 rounded-[8px] border border-gold-500/40 bg-gold-100/60 px-4 py-3 text-sm">
+          <strong>Preview checkout.</strong> You can go through every step, but this order won&apos;t be shipped and nobody will be charged.
+        </p>
+      )}
       <CheckoutForm
         email={user?.email ?? ""}
         signedIn={!!user}

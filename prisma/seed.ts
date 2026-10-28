@@ -1,10 +1,11 @@
 /**
- * Marqova seed — SAMPLE DATA ONLY.
+ * Marqova seed — the PREVIEW catalog.
  *
- * Every store, product, review, rating and statistic created here is fictional and
- * flagged with `isSample: true`. Store names are prefixed "Sample Store —" and
- * no real brands, logos or reviews are used. See CONTENT_TODO.md for what to
- * replace before launch.
+ * Every store, product and statistic created here is fictional and flagged with
+ * `isSample: true`; while any such listing is active the storefront shows a site-wide
+ * preview notice (components/layout/preview-notice.tsx). No real brands are used.
+ * Customer reviews and Q&A are never seeded unless SEED_SAMPLE_REVIEWS=true (local UI
+ * work only; each is labelled "Sample review"). See CONTENT_TODO.md.
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
@@ -13,6 +14,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type AttributeType, type TryOnType } from "../src/generated/prisma/client";
 import { computeTrustScore } from "../src/lib/trust-score";
 import { listingQuality } from "../src/lib/listing-quality";
+import { STORE_PROFILES, SUB_COPY } from "./catalog-copy";
+import { MULTI_SELLER } from "../src/lib/marketplace";
 
 const ca = process.env.DATABASE_CA;
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL, ...(ca && { ssl: { ca } }) }) });
@@ -32,6 +35,8 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(
 
 // Set SEED_PASSWORD for any internet-facing database; the default is published in the README.
 const PASSWORD = process.env.SEED_PASSWORD || "Marqova123!";
+// Fabricated customer reviews never go on an internet-facing catalog; opt in for local UI work.
+const SAMPLE_REVIEWS = process.env.SEED_SAMPLE_REVIEWS === "true";
 
 const COLORS: Record<string, string> = {
   Navy: "#1C2A40", Black: "#1A1A1A", White: "#F4F4F2", Olive: "#5B6B3A", Maroon: "#6E1F2A", Sand: "#D8C9A8",
@@ -113,10 +118,16 @@ const WHOLESALE_ATTRS: AttrSpec[] = [
   { key: "packaging", label: "Packaging", type: "SELECT", options: ["Carton", "Pallet", "Polybag"] },
 ];
 
-type Sub = { name: string; kind: string; items: string[]; price: [number, number]; tryOn?: TryOnType; model?: string };
+type Sub = { name: string; kind: string; items: string[]; price: [number, number]; tryOn?: TryOnType; model?: { url: string; item: string } };
 type Root = { name: string; icon: string; commission: number; attrs: AttrSpec[]; subs: Sub[] };
 
-const KHRONOS = (n: string) => `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/${n}/glTF-Binary/${n}.glb`;
+// Only public-domain (CC0) models from the Khronos glTF Sample Assets, each on the item it depicts.
+// CC-BY models (Shopify shoe, Wayfair sofa, DGG watch/sunglasses) are excluded: they need attribution,
+// depict other companies' real products or carry Khronos trademarks.
+const KHRONOS_CC0 = (n: "BoomBox" | "WaterBottle" | "ToyCar" | "Avocado", item: string) => ({
+  url: `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/${n}/glTF-Binary/${n}.glb`,
+  item,
+});
 
 const CATALOG: Root[] = [
   {
@@ -128,27 +139,27 @@ const CATALOG: Root[] = [
   },
   {
     name: "Shoes", icon: "Footprints", commission: 1400, attrs: SHOE_ATTRS, subs: [
-      { name: "Sneakers", kind: "shoe", tryOn: "SHOES", model: KHRONOS("MaterialsVariantsShoe"), price: [4500, 14500], items: ["Court Leather Sneaker", "Knit Runner", "Canvas Low-Top", "Trail Running Shoe", "Retro Suede Trainer"] },
+      { name: "Sneakers", kind: "shoe", tryOn: "SHOES", price: [4500, 14500], items: ["Court Leather Sneaker", "Knit Runner", "Canvas Low-Top", "Trail Running Shoe", "Retro Suede Trainer"] },
       { name: "Formal Shoes", kind: "shoe", tryOn: "SHOES", price: [6500, 18500], items: ["Classic Oxford", "Penny Loafer", "Chelsea Boot", "Monk Strap Shoe"] },
     ],
   },
   {
     name: "Accessories", icon: "Watch", commission: 1500, attrs: ACCESSORY_ATTRS, subs: [
-      { name: "Watches", kind: "watch", tryOn: "ACCESSORY", model: KHRONOS("ChronographWatch"), price: [5500, 32000], items: ["Field Chronograph Watch", "Minimalist Mesh Watch", "Diver's Automatic Watch", "Everyday Quartz Watch"] },
-      { name: "Eyewear", kind: "glasses", tryOn: "ACCESSORY", model: KHRONOS("SunglassesKhronos"), price: [2500, 9500], items: ["Polarised Wayfarer Sunglasses", "Round Acetate Sunglasses", "Blue-Light Reading Glasses"] },
+      { name: "Watches", kind: "watch", tryOn: "ACCESSORY", price: [5500, 32000], items: ["Field Chronograph Watch", "Minimalist Mesh Watch", "Diver's Automatic Watch", "Everyday Quartz Watch"] },
+      { name: "Eyewear", kind: "glasses", tryOn: "ACCESSORY", price: [2500, 9500], items: ["Polarised Square-Frame Sunglasses", "Round Acetate Sunglasses", "Blue-Light Reading Glasses"] },
       { name: "Bags", kind: "bag", price: [3500, 16500], items: ["Leather Weekender Bag", "Canvas Tote", "Slim Laptop Sleeve", "Everyday Crossbody Bag"] },
     ],
   },
   {
     name: "Electronics", icon: "Smartphone", commission: 800, attrs: ELECTRONICS_ATTRS, subs: [
-      { name: "Phones & Tablets", kind: "phone", price: [32000, 245000], items: ["Nova 12 Smartphone", "Pixelate A5 Smartphone", "Slate 11 Tablet", "Nova 12 Mini"] },
-      { name: "Audio", kind: "headphones", model: KHRONOS("BoomBox"), price: [3500, 48000], items: ["Studio Over-Ear Headphones", "Wireless Earbuds Pro", "Retro Bluetooth Boombox", "Portable Party Speaker", "Sport Neckband Earphones"] },
-      { name: "Laptops & Computers", kind: "laptop", price: [95000, 420000], items: ["Aero 14 Ultrabook", "Creator 16 Laptop", "Compact Mini PC", "27-inch QHD Monitor"] },
+      { name: "Phones & Tablets", kind: "phone", price: [32000, 245000], items: ["Shahpar S12 Smartphone", "Shahpar A5 Smartphone", "Shahpar Tab 11", "Shahpar S12 Mini"] },
+      { name: "Audio", kind: "headphones", model: KHRONOS_CC0("BoomBox", "Retro Bluetooth Boombox"), price: [3500, 48000], items: ["Studio Over-Ear Headphones", "Wireless Earbuds Pro", "Retro Bluetooth Boombox", "Portable Party Speaker", "Sport Neckband Earphones"] },
+      { name: "Laptops & Computers", kind: "laptop", price: [95000, 420000], items: ["Shahpar Lite 14 Ultrabook", "Shahpar Studio 16 Laptop", "Compact Mini PC", "27-inch QHD Monitor"] },
     ],
   },
   {
     name: "Home & Kitchen", icon: "Sofa", commission: 1200, attrs: HOME_ATTRS, subs: [
-      { name: "Furniture", kind: "sofa", model: KHRONOS("GlamVelvetSofa"), price: [18000, 165000], items: ["Velvet Three-Seater Sofa", "Sheen Lounge Chair", "Solid Oak Coffee Table", "Rattan Accent Chair", "Floating Wall Shelf Set"] },
+      { name: "Furniture", kind: "sofa", price: [18000, 165000], items: ["Velvet Three-Seater Sofa", "Sheen Lounge Chair", "Solid Oak Coffee Table", "Rattan Accent Chair", "Floating Wall Shelf Set"] },
       { name: "Kitchen & Dining", kind: "pot", price: [1500, 28000], items: ["Cast Iron Casserole", "Ceramic Dinner Set (18 pc)", "Stainless Steel Pressure Cooker", "Chef's Knife Set", "Glass Food Storage Set"] },
       { name: "Home Decor", kind: "lamp", price: [1800, 22000], items: ["Linen Drum Table Lamp", "Hand-Knotted Area Rug", "Ceramic Vase Trio", "Blackout Linen Curtains"] },
     ],
@@ -163,19 +174,19 @@ const CATALOG: Root[] = [
   {
     name: "Sports & Outdoors", icon: "Dumbbell", commission: 1100, attrs: SPORTS_ATTRS, subs: [
       { name: "Fitness", kind: "dumbbell", price: [1500, 38000], items: ["Adjustable Dumbbell Pair", "Non-Slip Yoga Mat", "Resistance Band Set", "Folding Treadmill"] },
-      { name: "Outdoor & Cycling", kind: "bottle-sport", model: KHRONOS("WaterBottle"), price: [1200, 85000], items: ["Insulated Steel Water Bottle", "Hybrid City Bicycle", "Two-Person Camping Tent", "Cricket Bat — English Willow"] },
+      { name: "Outdoor & Cycling", kind: "bottle-sport", model: KHRONOS_CC0("WaterBottle", "Insulated Steel Water Bottle"), price: [1200, 85000], items: ["Insulated Steel Water Bottle", "Hybrid City Bicycle", "Two-Person Camping Tent", "Cricket Bat — English Willow"] },
     ],
   },
   {
     name: "Kids & Baby", icon: "Baby", commission: 1100, attrs: KIDS_ATTRS, subs: [
-      { name: "Toys & Games", kind: "toy", model: KHRONOS("ToyCar"), price: [900, 12000], items: ["Die-Cast Toy Car", "Wooden Building Blocks (100 pc)", "STEM Robot Kit", "Plush Bear", "Family Board Game"] },
+      { name: "Toys & Games", kind: "toy", model: KHRONOS_CC0("ToyCar", "Die-Cast Toy Car"), price: [900, 12000], items: ["Die-Cast Toy Car", "Wooden Building Blocks (100 pc)", "STEM Robot Kit", "Plush Bear", "Family Board Game"] },
       { name: "Baby Gear", kind: "stroller", price: [2500, 65000], items: ["Lightweight Travel Stroller", "Convertible Car Seat", "Organic Cotton Swaddle Set"] },
     ],
   },
   {
     name: "Grocery", icon: "ShoppingBasket", commission: 600, attrs: GROCERY_ATTRS, subs: [
       { name: "Pantry Staples", kind: "jar", price: [350, 4800], items: ["Extra-Long Grain Basmati Rice", "Cold-Pressed Mustard Oil", "Pink Himalayan Salt", "Stone-Ground Whole Wheat Atta"] },
-      { name: "Snacks & Beverages", kind: "fruit", model: KHRONOS("Avocado"), price: [250, 3200], items: ["Hass Avocados (pack of 4)", "Roasted Almonds", "Green Tea Selection", "Dark Chocolate 70%"] },
+      { name: "Snacks & Beverages", kind: "fruit", model: KHRONOS_CC0("Avocado", "Hass Avocados (pack of 4)"), price: [250, 3200], items: ["Hass Avocados (pack of 4)", "Roasted Almonds", "Green Tea Selection", "Dark Chocolate 70%"] },
     ],
   },
   {
@@ -186,8 +197,8 @@ const CATALOG: Root[] = [
   },
   {
     name: "Books", icon: "BookOpen", commission: 700, attrs: BOOK_ATTRS, subs: [
-      { name: "Fiction", kind: "book", price: [800, 3500], items: ["The Lantern Keeper (Sample Novel)", "Monsoon Letters (Sample Novel)", "City of Brass Doors (Sample Novel)"] },
-      { name: "Non-fiction", kind: "book", price: [900, 4500], items: ["Practical Personal Finance (Sample)", "A Short History of Trade Routes (Sample)", "Cooking with Spice (Sample)"] },
+      { name: "Fiction", kind: "book", price: [800, 3500], items: ["The Lamplighter of Anarkali", "Rain Letters from Murree", "The Brass Door Quarter"] },
+      { name: "Non-fiction", kind: "book", price: [900, 4500], items: ["Practical Personal Finance", "A Short History of Trade Routes", "Cooking with Spice"] },
     ],
   },
   {
@@ -211,15 +222,24 @@ const CATALOG: Root[] = [
 ];
 
 const STORES = [
-  { name: "Sample Store — Northline", tagline: "Considered everyday clothing", tier: "BRAND" as const },
-  { name: "Sample Store — Kestrel Tech", tagline: "Electronics, tested and explained", tier: "BUSINESS" as const },
-  { name: "Sample Store — Hearth & Loom", tagline: "Furniture and decor for calm homes", tier: "BUSINESS" as const },
-  { name: "Sample Store — Indus Craft", tagline: "Handmade by artisans", tier: "INDIVIDUAL" as const },
-  { name: "Sample Store — Fieldhouse", tagline: "Sport, outdoors and play", tier: "BUSINESS" as const },
-  { name: "Sample Store — Daily Pantry", tagline: "Groceries and essentials", tier: "BUSINESS" as const },
-  { name: "Sample Store — Lumen Beauty", tagline: "Clean beauty and care", tier: "BRAND" as const },
-  { name: "Sample Store — Roadwise", tagline: "Car and bike care", tier: "INDIVIDUAL" as const },
-];
+  { name: "Northline", tier: "BRAND" as const },
+  { name: "Shahpar Tech", tier: "BUSINESS" as const },
+  { name: "Hearth & Loom", tier: "BUSINESS" as const },
+  { name: "Indus Craft", tier: "INDIVIDUAL" as const },
+  { name: "Fieldhouse", tier: "BUSINESS" as const },
+  { name: "Daily Pantry", tier: "BUSINESS" as const },
+  { name: "Gulnar Beauty", tier: "BRAND" as const },
+  { name: "Roadwise", tier: "INDIVIDUAL" as const },
+].map((s) => ({ ...s, ...STORE_PROFILES[s.name] }));
+
+// Single-seller mode: one store run by the owner (seller@marqova.dev); the names above become its house brands.
+const OWN_STORE = {
+  name: "Marqova",
+  tier: "BRAND" as const,
+  tagline: "Everything here is sold and shipped by us",
+  description:
+    "Marqova is the store and the seller: we choose every product, write every listing and ship every order ourselves from Lahore, so there's one place to go for help, returns and refunds.",
+};
 
 // Which store sells each root category (index into STORES).
 const STORE_FOR_ROOT: Record<string, number[]> = {
@@ -284,15 +304,15 @@ async function main() {
 
   // ── Stores ──
   const stores = [];
-  for (const [i, s] of STORES.entries()) {
+  for (const [i, s] of (MULTI_SELLER ? STORES : [OWN_STORE]).entries()) {
     const returnDays = pick([14, 30, 30]);
     const user = await db.user.create({
-      data: { email: i === 0 ? "seller@marqova.dev" : `${slug(s.name.replace("Sample Store — ", ""))}@sample.marqova.dev`, name: i === 0 ? "Sky Seller (demo)" : s.name, role: "SELLER", passwordHash, isSample: true },
+      data: { email: i === 0 ? "seller@marqova.dev" : `${slug(s.name)}@sample.marqova.dev`, name: i === 0 ? "Sky Seller (demo)" : s.name, role: "SELLER", passwordHash, isSample: true },
     });
     const store = await db.store.create({
       data: {
-        name: s.name, slug: slug(s.name.replace("Sample Store — ", "")), tagline: s.tagline, isVerified: true, isSample: true,
-        description: `${s.tagline}. This is a fictional sample store used to demonstrate Marqova.`,
+        name: s.name, slug: slug(s.name), tagline: s.tagline, isVerified: true, isSample: true,
+        description: s.description,
         responseTimeHours: between(1, 20),
         returnPolicy: `${returnDays}-day free returns on unused items in original packaging. Refunds within 5 business days of receipt.`,
         seller: {
@@ -309,8 +329,8 @@ async function main() {
     stores.push({ ...store, returnDays });
   }
 
-  // A pending applicant so the admin approval flow has something to review.
-  await db.user.create({
+  // A pending applicant so the admin approval flow has something to review (multi-seller only).
+  if (MULTI_SELLER) await db.user.create({
     data: {
       email: "pending.seller@marqova.dev", name: "Pat Pending (demo)", role: "SHOPPER", passwordHash, isSample: true,
       sellerProfile: {
@@ -347,18 +367,21 @@ async function main() {
       });
       await db.attributeDefinition.createMany({ data: root.attrs.map((a, i) => ({ categoryId: cat.id, key: a.key, label: a.label, type: a.type, options: a.options ?? [], unit: a.unit, required: !!a.required, variantAxis: !!a.variantAxis, filterable: a.filterable ?? true, position: i })) });
 
-      for (const [idx, itemName] of sub.items.entries()) {
+      const copy = SUB_COPY[sub.name];
+      const subAttrs = root.attrs.filter((a) => !copy.skip?.includes(a.key));
+      for (const itemName of sub.items) {
         const storeIdx = pick(STORE_FOR_ROOT[root.name]);
-        const store = stores[storeIdx];
+        const store = stores[MULTI_SELLER ? storeIdx : 0];
+        const houseBrand = STORES[storeIdx].name;
         const base = Math.round(between(sub.price[0], sub.price[1]) / 10) * 10 * 100;
         const discounted = rand() < 0.45;
         const compareAt = discounted ? Math.round((base * (1 + between(10, 40) / 100)) / 1000) * 1000 : null;
-        const combos = variantMatrix(root.attrs);
+        const combos = variantMatrix(subAttrs);
         const colorAttr = combos[0].color;
         const mainColor = COLORS[colorAttr ?? pick(Object.keys(COLORS))] ?? "#1C2A40";
-        const brand = `Sample ${pick(["Atelier", "Works", "Co.", "Studio", "Supply", "Goods"])} ${String.fromCharCode(65 + between(0, 25))}`;
+        const brand = houseBrand;
         const attrValues: Record<string, string | string[]> = {};
-        for (const a of root.attrs) {
+        for (const a of subAttrs) {
           if (a.variantAxis) attrValues[a.key] = [...new Set(combos.map((c) => c[a.key]).filter(Boolean))];
           else if (a.type === "BOOLEAN") attrValues[a.key] = rand() < 0.6 ? "Yes" : "No";
           else if (a.type === "MULTISELECT") attrValues[a.key] = [...new Set([pick(a.options!), pick(a.options!)])];
@@ -366,15 +389,14 @@ async function main() {
           else if (a.type === "TEXT") attrValues[a.key] = "Pakistan";
           else if (a.options?.length) attrValues[a.key] = pick(a.options);
         }
+        for (const [k, v] of Object.entries(copy.attrs?.(itemName) ?? {})) {
+          if (v === "") delete attrValues[k];
+          else attrValues[k] = v;
+        }
         const title = `${itemName}`;
-        const bullets = [
-          `${pick(["Thoughtfully designed", "Carefully made", "Built to last"])} for everyday ${root.name.toLowerCase()} use`,
-          `${typeof attrValues.material === "string" ? attrValues.material : "Quality"} construction, inspected before dispatch`,
-          "Full price shown upfront — delivery estimate included",
-          "Covered by Marqova Buyer Protection",
-          "SAMPLE LISTING — content to be replaced before launch",
-        ];
-        const description = `${title} from ${store.name}. This is fictional sample content created to demonstrate Marqova's product page: gallery, variants, specifications, verified reviews and Q&A. Replace it with real, accurate product information before launch. Materials, dimensions and care instructions belong here, written clearly so shoppers can buy with confidence.`;
+        const bullets = copy.bullets(title, attrValues);
+        const description = copy.about(title, houseBrand).join("\n\n");
+        const weightKg = attrValues.weight ? Number(attrValues.weight) : (copy.weightOf?.(itemName) ?? Math.round(between(copy.weight[0] * 100, copy.weight[1] * 100)) / 100);
         const imgCount = between(4, 6);
         const media: { type: "IMAGE" | "MODEL_3D"; url: string; alt: string; position: number }[] = Array.from({ length: imgCount }, (_, n) => ({
           type: "IMAGE",
@@ -382,14 +404,17 @@ async function main() {
           alt: `${title} — view ${n + 1}`,
           position: n,
         }));
-        const has3d = !!sub.model && idx === 0;
-        if (has3d) media.push({ type: "MODEL_3D", url: sub.model!, alt: `${title} 3D model (sample)`, position: 99 });
-        const quality = listingQuality({ title, description, bullets, imageCount: imgCount, has3d, attributesFilled: Object.keys(attrValues).length, attributesRequired: root.attrs.length, hasBrand: true });
+        const has3d = sub.model?.item === itemName;
+        if (has3d) media.push({ type: "MODEL_3D", url: sub.model!.url, alt: `${title} 3D model`, position: 99 });
+        const quality = listingQuality({ title, description, bullets, imageCount: imgCount, has3d, attributesFilled: Object.keys(attrValues).length, attributesRequired: subAttrs.length, hasBrand: true });
         const deliveryMin = between(1, 3);
         const product = await db.product.create({
           data: {
             storeId: store.id, categoryId: cat.id, title, slug: `${slug(title)}-${slug(store.slug).slice(0, 8)}-${between(100, 999)}`, brand, description, bullets,
-            specs: { Brand: brand, Model: `MQ-${between(1000, 9999)}`, "Country of origin": "Pakistan", Weight: `${between(1, 40) / 10} kg`, "In the box": `1 × ${itemName}` },
+            specs: {
+              Brand: brand, "Model number": `${brand.replace(/[^A-Z]/g, "")}-${between(1000, 9999)}`, "Country of origin": copy.origin, "Shipping weight": `${weightKg} kg`, "In the box": `1 × ${itemName}`,
+              ...(copy.warranty && { Warranty: copy.warranty }), ...(copy.care && { Care: copy.care }),
+            },
             attributes: attrValues, tags: [...new Set([...slug(itemName).split("-"), slug(root.name), slug(sub.name)])].filter((t) => t.length > 2),
             sizeGuide: sub.tryOn && ["TOP", "BOTTOM", "DRESS", "SHOES"].includes(sub.tryOn) ? { type: sub.tryOn } : undefined,
             status: "ACTIVE", basePrice: base, compareAtPrice: compareAt, shippingFee: pick([0, 150_00, 200_00, 250_00]),
@@ -422,14 +447,14 @@ async function main() {
       }
     }
   }
-  console.log(`Created ${allProducts.length} sample products.`);
+  console.log(`Created ${allProducts.length} preview products.`);
 
   // ── Verified sample orders + reviews ──
   const orderRows: object[] = [];
   const itemRows: object[] = [];
   const reviewRows: object[] = [];
   let orderNo = 100000;
-  for (const p of allProducts) {
+  for (const p of SAMPLE_REVIEWS ? allProducts : []) {
     const n = between(0, 9);
     for (let r = 0; r < n; r++) {
       const reviewer = reviewers[(r + between(0, 13)) % reviewers.length];
@@ -459,14 +484,14 @@ async function main() {
   await db.order.createMany({ data: orderRows as never });
   await db.orderItem.createMany({ data: itemRows as never });
   await db.review.createMany({ data: reviewRows as never });
-  console.log(`Created ${reviewRows.length} sample verified reviews.`);
+  console.log(SAMPLE_REVIEWS ? `Created ${reviewRows.length} labelled sample reviews.` : "No reviews seeded (set SEED_SAMPLE_REVIEWS=true for local UI work).");
 
   // Aggregate ratings onto products.
   const agg = await db.review.groupBy({ by: ["productId"], where: { status: "PUBLISHED" }, _avg: { rating: true }, _count: { _all: true } });
   for (const a of agg) await db.product.update({ where: { id: a.productId }, data: { ratingAvg: Math.round((a._avg.rating ?? 0) * 10) / 10, ratingCount: a._count._all } });
 
   // ── Q&A ──
-  for (const p of allProducts.filter(() => rand() < 0.5)) {
+  for (const p of SAMPLE_REVIEWS ? allProducts.filter(() => rand() < 0.5) : []) {
     const [q, a] = pick(QUESTIONS);
     await db.question.create({
       data: { productId: p.id, userId: pick(reviewers).id, body: q, upvotes: between(0, 25), isSample: true, answers: { create: { userId: (await db.sellerProfile.findFirstOrThrow({ where: { store: { id: p.storeId } } })).userId, body: a, isSeller: true, upvotes: between(0, 10) } } },
@@ -475,7 +500,9 @@ async function main() {
 
   // ── Trust scores ──
   for (const s of stores) {
-    const inputs = { onTimeRate: 0.82 + rand() * 0.17, returnRate: rand() * 0.08, cancelRate: rand() * 0.04, reviewRating: 3.8 + rand() * 1.1, responseHours: s.responseTimeHours };
+    // Ratings come only from seeded reviews (0 = no ratings yet), never invented.
+    const rated = await db.review.aggregate({ where: { status: "PUBLISHED", product: { storeId: s.id } }, _avg: { rating: true } });
+    const inputs = { onTimeRate: 0.82 + rand() * 0.17, returnRate: rand() * 0.08, cancelRate: rand() * 0.04, reviewRating: rated._avg.rating ?? 0, responseHours: s.responseTimeHours };
     await db.trustScore.create({ data: { storeId: s.id, score: computeTrustScore(inputs), ...inputs } });
   }
   const storeTrust = new Map((await db.trustScore.findMany({ where: { storeId: { not: null } } })).map((t) => [t.storeId!, t]));
@@ -501,7 +528,7 @@ async function main() {
       { code: "WELCOME10", type: "PERCENT", value: 10, minSubtotal: 0 },
       { code: "FREESHIP", type: "FREE_SHIPPING", value: 0, minSubtotal: 1500_00 },
       { code: "SAVE500", type: "FIXED", value: 500_00, minSubtotal: 5000_00 },
-      { code: "NORTHLINE15", type: "PERCENT", value: 15, minSubtotal: 3000_00, storeId: stores[0].id },
+      ...(MULTI_SELLER ? [{ code: "NORTHLINE15", type: "PERCENT" as const, value: 15, minSubtotal: 3000_00, storeId: stores[0].id }] : []),
     ],
   });
   for (const p of allProducts.filter(() => rand() < 0.06)) {

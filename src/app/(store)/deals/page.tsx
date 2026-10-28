@@ -3,10 +3,11 @@ import { Timer } from "lucide-react";
 import { ProductGrid } from "@/components/product/product-card";
 import { EmptyState } from "@/components/ui/primitives";
 import { getDeals } from "@/server/catalog";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 export const metadata: Metadata = {
   title: "Today's Deals",
-  description: "Limited-time deals from verified sellers. Every discount is checked against the item's recent price history.",
+  description: `Limited-time deals${MULTI_SELLER ? " from verified sellers" : ""}. Every discount is checked against the item's recent price history.`,
   alternates: { canonical: "/deals" },
 };
 

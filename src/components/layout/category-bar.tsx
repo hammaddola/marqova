@@ -7,6 +7,7 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/overlay";
 import { CategoryIcon } from "@/components/category-icon";
 import { AnimatePresence, motion } from "@/components/motion";
 import { cn } from "@/lib/utils";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 type Cat = { name: string; slug: string; icon: string; children: { name: string; slug: string }[] };
 
@@ -78,9 +79,11 @@ export function CategoryBar({ categories }: { categories: Cat[] }) {
         <Link href="/try-on" className="focus-dark flex shrink-0 items-center gap-1.5 rounded-full bg-gold-500 px-3 py-1 text-[13px] font-semibold text-navy-900 transition-colors hover:bg-gold-300">
           <Sparkles className="size-3.5" aria-hidden /> Try-On Studio
         </Link>
-        <Link href="/sell" className={linkCls}>
-          Sell on Marqova
-        </Link>
+        {MULTI_SELLER && (
+          <Link href="/sell" className={linkCls}>
+            Sell on Marqova
+          </Link>
+        )}
       </div>
 
       <AnimatePresence>

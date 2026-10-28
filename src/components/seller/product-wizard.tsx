@@ -43,6 +43,8 @@ export function ProductWizard({ categories, initial = EMPTY_INITIAL, startStep =
   const [dir, setDir] = useState(1);
   const [s, setS] = useState<WizardInitial>(initial);
   const [catQuery, setCatQuery] = useState("");
+  // Per-listing tag so auto-generated SKUs don't clash between listings with similar titles.
+  const [skuTag] = useState(() => Math.random().toString(36).slice(2, 6).toUpperCase());
   const [axisValues, setAxisValues] = useState<Record<string, string[]>>(() => {
     const out: Record<string, string[]> = {};
     for (const v of initial.variants)
@@ -80,7 +82,7 @@ export function ProductWizard({ categories, initial = EMPTY_INITIAL, startStep =
     const active = axes.filter((a) => values[a.key]?.length);
     let combos: Record<string, string>[] = [{}];
     for (const a of active) combos = combos.flatMap((c) => values[a.key].map((v) => ({ ...c, [a.key]: v })));
-    const base = s.title ? s.title.replace(/[^A-Za-z0-9]/g, "").slice(0, 6).toUpperCase() : "SKU";
+    const base = `${s.title ? s.title.replace(/[^A-Za-z0-9]/g, "").slice(0, 6).toUpperCase() : "SKU"}-${skuTag}`;
     setS((x) => ({
       ...x,
       variants: combos.slice(0, 200).map((c, i) => {

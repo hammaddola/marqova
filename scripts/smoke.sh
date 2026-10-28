@@ -28,7 +28,12 @@ check() { # $1 = jar, $2 = path, $3 = expected code
 
 GUEST="$TMP/guest"; touch "$GUEST"
 SLUG=$(curl -s "$BASE/api/search/suggest?q=shirt" | sed -E 's/.*"slug":"([^"]+)".*/\1/')
-for p in / /search "/search?q=linen&sort=price_asc" /c/fashion "/c/men-s-clothing?a_size=M" /deals "/p/$SLUG" /try-on /sell /compare /cart /login /register /legal/terms /legal/privacy /sitemap.xml /robots.txt /store/northline /sample/shirt.svg; do check "$GUEST" "$p" 200; done
+STORE=$(curl -s "$BASE/p/$SLUG" | grep -oE 'href="/store/[a-z0-9-]+"' | head -1 | cut -d'"' -f2)
+for p in / /search "/search?q=linen&sort=price_asc" /c/fashion "/c/men-s-clothing?a_size=M" /deals "/p/$SLUG" /try-on /compare /cart /login /register /about /help /legal/terms /legal/privacy /sitemap.xml /robots.txt "$STORE" /sample/shirt.svg; do check "$GUEST" "$p" 200; done
+# /sell exists only when the marketplace is open to other sellers.
+SELL_CODE=404
+[ "${NEXT_PUBLIC_MARKETPLACE_MODE:-single}" = multi ] && SELL_CODE=200
+check "$GUEST" /sell "$SELL_CODE"
 check "$GUEST" /p/does-not-exist 404
 check "$GUEST" /account 307
 check "$GUEST" /seller 307

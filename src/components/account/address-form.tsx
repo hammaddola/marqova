@@ -5,7 +5,8 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/overlay";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/form";
+import { Field, Input, Select } from "@/components/ui/form";
+import { CITIES, PROVINCES } from "@/lib/pakistan";
 import { addAddress } from "@/server/actions/shopper";
 
 const FIELDS = [
@@ -15,7 +16,7 @@ const FIELDS = [
   ["line1", "Street address", "sm:col-span-2"],
   ["line2", "Area / apartment (optional)", "sm:col-span-2"],
   ["city", "City", ""],
-  ["region", "Province / region", ""],
+  ["region", "Province / territory", ""],
   ["postalCode", "Postal code", ""],
 ] as const;
 
@@ -49,9 +50,25 @@ export function AddressForm() {
         >
           {FIELDS.map(([name, label, span]) => (
             <Field key={name} label={label} htmlFor={`addr-${name}`} error={errors[name]} className={span}>
-              <Input id={`addr-${name}`} name={name} defaultValue={name === "label" ? "Home" : ""} aria-invalid={!!errors[name]} />
+              {name === "region" ? (
+                <Select id="addr-region" name="region" defaultValue="" aria-invalid={!!errors.region}>
+                  <option value="" disabled>Choose…</option>
+                  {PROVINCES.map((p) => <option key={p}>{p}</option>)}
+                </Select>
+              ) : (
+                <Input
+                  id={`addr-${name}`}
+                  name={name}
+                  defaultValue={name === "label" ? "Home" : ""}
+                  aria-invalid={!!errors[name]}
+                  {...(name === "phone" && { type: "tel", inputMode: "tel", placeholder: "0300 1234567" })}
+                  {...(name === "postalCode" && { inputMode: "numeric", maxLength: 5, placeholder: "54000" })}
+                  {...(name === "city" && { list: "pk-cities" })}
+                />
+              )}
             </Field>
           ))}
+          <datalist id="pk-cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
           <Button type="submit" variant="navy" className="sm:col-span-2" loading={pending}>
             Save address
           </Button>

@@ -38,8 +38,8 @@ A flash deal moves the current price to `compareAtPrice` and records the new pri
 ### D12. Try-On Studio uses an explainable fit engine
 `src/lib/fit.ts` estimates measurements from height, weight, body type and shape, then compares them to size charts per region. The result drives the 3D fit map, recommended size and advice text. A photo-real AI try-on plugs in through `TryOnProvider`. The shopper's photo is sent per request and never stored.
 
-### D13. Sample product imagery is generated
-Real photos of real brands would break the honesty rules. `/sample/[kind].svg` generates consistent, clearly labelled artwork per category and colour. 3D sample models come from the Khronos glTF sample repository (CC licences) and are listed in CONTENT_TODO.md.
+### D13. Preview product imagery is generated
+Real photos of real brands would break the honesty rules. `/sample/[kind].svg` generates consistent artwork per category and colour (light products get a darker backdrop so they stay visible). 3D models are limited to the **CC0 (public-domain)** Khronos glTF samples, each attached to the item it depicts; CC-BY models are excluded because they need attribution, depict other companies' real products or carry Khronos trademarks.
 
 ### D14. Rate limiting in `proxy.ts` is per-instance
 Fine for a single node and for development. For horizontal scaling, back `src/lib/rate-limit.ts` with Redis/Upstash (tracked in PRIORITY_QUEUE.md).
@@ -52,3 +52,12 @@ Failed sign-ins are capped at 8 per email + IP and 20 per email (any IP) per 15 
 
 ### D16. Above-the-fold entrances use CSS, not JavaScript
 Motion animates below-the-fold reveals, menus, drawers, the cart badge and step transitions. The hero headline and product grids use a CSS keyframe, so the Largest Contentful Paint never waits for hydration. Heavy below-the-fold widgets (Recharts price history, reviews, Q&A) are code-split.
+
+### D18. One honest preview notice instead of "SAMPLE" stamps
+While any `isSample` listing is active, every storefront page shows a slim notice ("listings are previews; orders aren't shipped or charged") and checkout repeats it. It switches off automatically once real listings replace the seeded catalog, so it can't be forgotten. Per-item "Sample" stamps are gone, but fabricated customer reviews and Q&A are never seeded on a shared database (`SEED_SAMPLE_REVIEWS=true` only for local UI work). Trust Scores never invent a rating: with no reviews the review component gets neutral half credit and the badge says "No ratings yet".
+
+### D19. Single seller first, marketplace later
+`NEXT_PUBLIC_MARKETPLACE_MODE` defaults to `single`: one store (Marqova, run by the owner), seller sign-up closed in both the UI and the `applyAsSeller` action, and every "Sell on Marqova" entry point hidden. The multi-vendor code (onboarding, verification, payouts, admin approvals) stays intact; set the variable to `multi` and reseed to open the marketplace.
+
+### D20. Pakistan only
+Addresses must be in Pakistan: province or territory from a fixed list, a 5-digit postal code and a Pakistani phone number, normalised to `+92` on save (`src/lib/pakistan.ts`). "Deliver to" offers 20 Pakistani cities and the server rejects anything else. Prices are in rupees and the site language is `en-PK`.

@@ -12,6 +12,7 @@ import { fieldErrors, productInputSchema, sellerApplicationSchema, type ActionRe
 import { assertSeller, audit, getSessionUser } from "@/server/session";
 import { createApiKey, saveProduct } from "@/server/products";
 import { enqueue, kickJobs, PRIORITY } from "@/server/jobs";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 const fail = (error: string): ActionResult<never> => ({ ok: false, error });
 
@@ -28,6 +29,7 @@ async function seller() {
 export async function applyAsSeller(_: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const user = await getSessionUser();
   if (!user) return fail("Please sign in first.");
+  if (!MULTI_SELLER) return fail("Marqova isn't accepting new sellers yet.");
   const raw = Object.fromEntries(formData);
   const parsed = sellerApplicationSchema.safeParse({ ...raw, agree: raw.agree === "on" });
   if (!parsed.success) return { ok: false, error: "Please check the highlighted fields.", fields: fieldErrors(parsed.error) };

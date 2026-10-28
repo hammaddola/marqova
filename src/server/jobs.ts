@@ -131,7 +131,7 @@ export async function recomputeStoreTrust(storeId: string) {
     onTimeRate: delivered.length ? onTime / delivered.length : 0.9,
     returnRate: items.length ? items.filter((i) => i._count.returns > 0).length / items.length : 0,
     cancelRate: items.length ? items.filter((i) => i.status === "CANCELLED").length / items.length : 0,
-    reviewRating: reviews._avg.rating ?? 4,
+    reviewRating: reviews._avg.rating ?? 0,
     responseHours: store?.responseTimeHours ?? 24,
   };
   const score = computeTrustScore(inputs);

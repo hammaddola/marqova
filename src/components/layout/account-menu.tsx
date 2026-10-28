@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DropdownMenu as DM } from "radix-ui";
 import { ChevronDown, LayoutDashboard, LogOut, Package, Heart, Bell, Ruler, Store, Shield, User } from "lucide-react";
 import { signOutAction } from "@/server/actions/auth";
+import { MULTI_SELLER } from "@/lib/marketplace";
 
 export function AccountMenu({ user }: { user: { name: string; role: "SHOPPER" | "SELLER" | "ADMIN" } | null }) {
   if (!user) {
@@ -74,7 +75,7 @@ export function AccountMenu({ user }: { user: { name: string; role: "SHOPPER" | 
               </Link>
             </DM.Item>
           )}
-          {user.role === "SHOPPER" && (
+          {MULTI_SELLER && user.role === "SHOPPER" && (
             <DM.Item asChild>
               <Link href="/sell" className={item}>
                 <LayoutDashboard /> Start selling

@@ -10,7 +10,8 @@ import { Banknote, Check, CreditCard, Lock, MapPin, Package, Truck, Wallet } fro
 import { toast } from "sonner";
 import { motion } from "@/components/motion";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Checkbox } from "@/components/ui/form";
+import { Field, Input, Checkbox, Select } from "@/components/ui/form";
+import { CITIES, PROVINCES } from "@/lib/pakistan";
 import { ProductImage } from "@/components/brand";
 import { OrderSummary } from "@/components/cart/summary";
 import { addressSchema } from "@/lib/validation";
@@ -128,7 +129,7 @@ export function CheckoutForm(p: Props) {
                 <Input id="fullName" autoComplete="name" {...reg("fullName")} />
               </Field>
               <Field label="Phone" htmlFor="phone" error={errors.address?.phone?.message}>
-                <Input id="phone" type="tel" autoComplete="tel" {...reg("phone")} />
+                <Input id="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="0300 1234567" {...reg("phone")} />
               </Field>
               <Field label="Street address" htmlFor="line1" error={errors.address?.line1?.message} className="sm:col-span-2">
                 <Input id="line1" autoComplete="address-line1" {...reg("line1")} />
@@ -137,13 +138,17 @@ export function CheckoutForm(p: Props) {
                 <Input id="line2" autoComplete="address-line2" {...reg("line2")} />
               </Field>
               <Field label="City" htmlFor="city" error={errors.address?.city?.message}>
-                <Input id="city" autoComplete="address-level2" {...reg("city")} />
+                <Input id="city" autoComplete="address-level2" list="pk-cities" {...reg("city")} />
+                <datalist id="pk-cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
               </Field>
-              <Field label="Province / region" htmlFor="region" error={errors.address?.region?.message}>
-                <Input id="region" autoComplete="address-level1" {...reg("region")} />
+              <Field label="Province / territory" htmlFor="region" error={errors.address?.region?.message}>
+                <Select id="region" autoComplete="address-level1" {...reg("region")}>
+                  <option value="" disabled>Choose…</option>
+                  {PROVINCES.map((p) => <option key={p}>{p}</option>)}
+                </Select>
               </Field>
               <Field label="Postal code" htmlFor="postalCode" error={errors.address?.postalCode?.message}>
-                <Input id="postalCode" autoComplete="postal-code" {...reg("postalCode")} />
+                <Input id="postalCode" autoComplete="postal-code" inputMode="numeric" maxLength={5} placeholder="54000" {...reg("postalCode")} />
               </Field>
               {p.signedIn && (
                 <label className="flex items-center gap-2 self-end pb-3 text-sm">

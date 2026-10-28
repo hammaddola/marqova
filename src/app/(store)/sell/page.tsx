@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { FeeCalculator } from "@/components/seller/fee-calculator";
 import { db } from "@/lib/db";
+import { MULTI_SELLER } from "@/lib/marketplace";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Sell on Marqova",
@@ -22,6 +24,7 @@ const FEATURES = [
 ] as const;
 
 export default async function SellPage() {
+  if (!MULTI_SELLER) notFound();
   const categories = await db.category.findMany({ where: { parentId: null, isActive: true }, orderBy: { position: "asc" }, select: { id: true, name: true, commissionBps: true } });
   return (
     <div>

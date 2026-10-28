@@ -12,7 +12,7 @@ export function TrustBadge({ score, inputs, subject = "seller" }: { score: numbe
     ["On-time delivery", `${Math.round(inputs.onTimeRate * 100)}%`, c.onTime, TRUST_WEIGHTS.onTime],
     ["Return rate", `${(inputs.returnRate * 100).toFixed(1)}%`, c.returns, TRUST_WEIGHTS.returns],
     ["Cancellation rate", `${(inputs.cancelRate * 100).toFixed(1)}%`, c.cancellations, TRUST_WEIGHTS.cancellations],
-    ["Verified review rating", `${inputs.reviewRating.toFixed(1)} / 5`, c.reviews, TRUST_WEIGHTS.reviews],
+    ["Verified review rating", inputs.reviewRating > 0 ? `${inputs.reviewRating.toFixed(1)} / 5` : "No ratings yet", c.reviews, TRUST_WEIGHTS.reviews],
     ["Response time", `${Math.round(inputs.responseHours)}h`, c.response, TRUST_WEIGHTS.response],
   ] as const;
   return (

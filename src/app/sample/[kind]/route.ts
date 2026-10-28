@@ -1,6 +1,6 @@
 /**
- * Generates SAMPLE product artwork as SVG so the seeded catalog looks coherent
- * without using real product photos. Replace with real uploads before launch.
+ * Generates illustrated product artwork as SVG for preview listings, so the catalog looks
+ * coherent without borrowing real product photos. Real sellers upload photography instead.
  * GET /sample/shirt.svg?c=%231C2A40&v=2
  */
 const SHAPES: Record<string, string> = {
@@ -35,13 +35,21 @@ const SHAPES: Record<string, string> = {
   id: `<rect x="190" y="260" width="420" height="280" rx="18"/><circle cx="290" cy="380" r="50" fill="#fff" opacity=".7"/><rect x="370" y="340" width="200" height="16" fill="#fff" opacity=".7"/><rect x="370" y="380" width="160" height="12" fill="#C8A24A"/>`,
 };
 
-function tint(hex: string, amount: number) {
+function rgb(hex: string) {
   const n = parseInt(hex.replace("#", ""), 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  const mix = (c: number, t: number) => Math.round(c + (t - c) * amount);
-  return `rgb(${mix(r, 250)},${mix(g, 248)},${mix(b, 243)})`;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Mixes `hex` towards `target` by `amount` (0..1). */
+function mix(hex: string, target: [number, number, number], amount: number) {
+  const c = rgb(hex).map((v, i) => Math.round(v + (target[i] - v) * amount));
+  return `rgb(${c.join(",")})`;
+}
+
+// Light products (white, sand, silver) disappear on a pale backdrop, so they get a darker one.
+function isLight(hex: string) {
+  const [r, g, b] = rgb(hex);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 170;
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ kind: string }> }) {
@@ -55,13 +63,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ kind: string }>
   const rotate = [0, -8, 8, -14, 12, 0, -4, 6, -10, 10][v];
   const scale = [1, 0.92, 0.92, 0.82, 0.82, 1.08, 0.95, 0.88, 1, 0.9][v];
   const angle = [135, 160, 110, 180, 90, 135, 200, 70, 150, 120][v];
+  const light = isLight(color);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
-<defs><linearGradient id="g" gradientTransform="rotate(${angle} .5 .5)"><stop offset="0" stop-color="${tint(color, 0.9)}"/><stop offset="1" stop-color="${tint(color, 0.78)}"/></linearGradient>
+<defs><linearGradient id="g" gradientTransform="rotate(${angle} .5 .5)"><stop offset="0" stop-color="${light ? mix(color, [74, 84, 100], 0.72) : mix(color, [250, 248, 243], 0.9)}"/><stop offset="1" stop-color="${light ? mix(color, [44, 52, 66], 0.8) : mix(color, [250, 248, 243], 0.78)}"/></linearGradient>
 <radialGradient id="s" cx=".5" cy=".85" r=".45"><stop offset="0" stop-color="#0E1A2B" stop-opacity=".16"/><stop offset="1" stop-color="#0E1A2B" stop-opacity="0"/></radialGradient></defs>
 <rect width="800" height="800" fill="url(#g)"/>
 <ellipse cx="400" cy="660" rx="260" ry="40" fill="url(#s)"/>
 <g transform="translate(400 400) rotate(${rotate}) scale(${scale}) translate(-400 -400)" fill="${color}" color="${color}">${shape}</g>
-<g font-family="Inter,Arial,sans-serif" font-size="20" font-weight="600" letter-spacing="3"><rect x="24" y="24" width="112" height="36" rx="18" fill="#fff" opacity=".85"/><text x="80" y="49" text-anchor="middle" fill="#5B6575">SAMPLE</text></g>
 </svg>`;
   return new Response(svg, {
     headers: { "content-type": "image/svg+xml; charset=utf-8", "cache-control": "public, max-age=31536000, immutable", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'" },
