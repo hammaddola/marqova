@@ -9,6 +9,7 @@ import { getPaymentProvider } from "@/lib/providers/payment";
 import { getCartView } from "@/server/cart";
 import { getSessionUser } from "@/server/session";
 import { markOrderPlaced, releaseOrder, trackStat } from "@/server/orders";
+import { cartKind } from "@/lib/marketplace";
 
 class CheckoutError extends Error {}
 
@@ -26,6 +27,10 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
   if (!view.cart || !view.purchasable.length) return { ok: false, error: "Your cart is empty or items are unavailable." };
   if (view.purchasable.length !== view.lines.length) return { ok: false, error: "Some items changed availability. Please review your cart." };
   const { totals } = view;
+  // Preview items are never for sale: they can't share an order with real items and are never charged.
+  const kind = cartKind(view.purchasable);
+  if (kind === "mixed") return { ok: false, error: "Preview items can't be ordered together with items that are for sale. Remove the preview items to continue." };
+  const preview = kind === "preview";
 
   let order;
   try {
@@ -36,7 +41,7 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
         if (res.count !== 1) throw new CheckoutError(`Sorry, "${line.product.title}" just sold out in that option.`);
         const inv = await tx.inventory.findFirst({ where: { variantId: line.variantId, quantity: { gte: line.quantity } }, orderBy: { quantity: "desc" } });
         if (inv) await tx.inventory.update({ where: { id: inv.id }, data: { quantity: { decrement: line.quantity } } });
-        await tx.product.update({ where: { id: line.product.id }, data: { salesCount: { increment: line.quantity } } });
+        if (!preview) await tx.product.update({ where: { id: line.product.id }, data: { salesCount: { increment: line.quantity } } });
       }
       if (totals.couponApplied) await tx.coupon.update({ where: { code: totals.couponApplied }, data: { usedCount: { increment: 1 } } });
 
@@ -51,8 +56,7 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
           discountTotal: totals.discount,
           total: totals.total,
           couponCode: totals.couponApplied,
-          // Any preview item makes this a preview order: never shipped, never charged.
-          isSample: view.purchasable.some((l) => l.product.isSample),
+          isSample: preview,
           deliveryOption: totals.delivery.id,
           paymentMethod: provider.id,
           shippingAddress: input.address,
@@ -83,19 +87,21 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
     throw err;
   }
 
-  const payment = await provider.createPayment({ orderId: order.id, orderNumber: order.number, amount: order.total, currency: "PKR", email: order.email });
-  await db.payment.create({ data: { orderId: order.id, provider: provider.id, method: provider.id, amount: order.total, status: payment.status, providerRef: payment.providerRef } });
-
-  if (payment.status === "FAILED") {
-    await releaseOrder(order.id);
-    return { ok: false, error: payment.message ?? "Payment was declined. No money was taken." };
+  // Preview orders skip the payment provider entirely: no payment record, no charge.
+  const payment = preview ? null : await provider.createPayment({ orderId: order.id, orderNumber: order.number, amount: order.total, currency: "PKR", email: order.email });
+  if (payment) {
+    await db.payment.create({ data: { orderId: order.id, provider: provider.id, method: provider.id, amount: order.total, status: payment.status, providerRef: payment.providerRef } });
+    if (payment.status === "FAILED") {
+      await releaseOrder(order.id);
+      return { ok: false, error: payment.message ?? "Payment was declined. No money was taken." };
+    }
   }
-  // Card payments (Stripe) are confirmed by the webhook; mock/COD are placed immediately.
-  if (!payment.redirectUrl) await markOrderPlaced(order.id);
+  // Card payments (Stripe) are confirmed by the webhook; mock/COD and preview orders are placed immediately.
+  if (!payment?.redirectUrl) await markOrderPlaced(order.id);
 
   // Lets a guest (and only that browser) view the confirmation page.
   if (!user) (await cookies()).set("mq_last_order", order.id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 24, path: "/" });
-  for (const l of view.purchasable) await trackStat(l.product.id, "orders", l.unitPrice * l.quantity);
+  if (!preview) for (const l of view.purchasable) await trackStat(l.product.id, "orders", l.unitPrice * l.quantity);
   revalidatePath("/", "layout");
-  return { ok: true, data: { redirectUrl: payment.redirectUrl ?? `/checkout/confirmation/${order.id}` } };
+  return { ok: true, data: { redirectUrl: payment?.redirectUrl ?? `/checkout/confirmation/${order.id}` } };
 }
