@@ -23,7 +23,8 @@ test("guest checkout on a preview item is clearly a preview order", async ({ pag
   await expect(page.getByText("Total, no hidden fees")).toBeVisible();
   // Preview listings say so, stay out of search engines and never publish a live offer.
   await expect(page.getByText("Preview listing.")).toBeVisible();
-  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  // The dev server can emit a second robots tag, so look for the noindex one rather than "the" tag.
+  await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
   const ld = await page.locator('script[type="application/ld+json"]').first().textContent();
   expect(ld).not.toContain('"offers"');
   await page.getByRole("button", { name: "Buy Now" }).first().click();
