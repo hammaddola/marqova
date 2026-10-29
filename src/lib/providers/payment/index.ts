@@ -90,11 +90,12 @@ function stripeProvider(): PaymentProvider | null {
  * Easypaisa…) plug in by implementing PaymentProvider and adding a case here.
  */
 export function getPaymentProviders(): PaymentProvider[] {
-  const enabled = (process.env.PAYMENT_PROVIDERS ?? "mock,cod").split(",").map((s) => s.trim());
+  const enabled = (process.env.PAYMENT_PROVIDERS ?? "cod").split(",").map((s) => s.trim());
   const all: (PaymentProvider | null)[] = [
     enabled.includes("stripe") ? stripeProvider() : null,
     enabled.includes("cod") ? codProvider : null,
-    enabled.includes("mock") ? mockProvider : null,
+    // The test card approves every payment without moving money, so it never runs in production.
+    enabled.includes("mock") && process.env.NODE_ENV !== "production" ? mockProvider : null,
   ];
   return all.filter((p): p is PaymentProvider => !!p);
 }

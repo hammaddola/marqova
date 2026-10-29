@@ -61,7 +61,9 @@ export async function loadCoupon(code: string | null | undefined): Promise<Coupo
     where: { code: code.toUpperCase(), active: true, startsAt: { lte: now }, OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
   });
   if (!c || (c.usageLimit != null && c.usedCount >= c.usageLimit)) return null;
-  return { code: c.code, type: c.type, value: c.value, minSubtotal: c.minSubtotal, storeId: c.storeId };
+  // Bhao-Taao deals belong to the shopper who haggled for them.
+  if (c.userId && c.userId !== (await getSessionUser())?.id) return null;
+  return { code: c.code, type: c.type, value: c.value, minSubtotal: c.minSubtotal, storeId: c.storeId, productId: c.productId };
 }
 
 export async function getCartView(deliveryId?: string | null) {
@@ -105,7 +107,7 @@ export async function getCartView(deliveryId?: string | null) {
   const purchasable = lines.filter((l) => l.available && !l.quantityTooHigh);
   const coupon = await loadCoupon(cart?.couponCode);
   const totals = computeTotals(
-    purchasable.map((l) => ({ unitPrice: l.unitPrice, quantity: l.quantity, shippingFee: l.product.shippingFee, storeId: l.product.storeId })),
+    purchasable.map((l) => ({ unitPrice: l.unitPrice, quantity: l.quantity, shippingFee: l.product.shippingFee, storeId: l.product.storeId, productId: l.product.id })),
     { coupon, deliveryId },
   );
   return { cart, lines, purchasable, totals, couponCode: cart?.couponCode ?? null };

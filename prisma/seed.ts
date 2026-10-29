@@ -419,7 +419,9 @@ async function main() {
             sizeGuide: sub.tryOn && ["TOP", "BOTTOM", "DRESS", "SHOES"].includes(sub.tryOn) ? { type: sub.tryOn } : undefined,
             status: "ACTIVE", basePrice: base, compareAtPrice: compareAt, shippingFee: pick([0, 150_00, 200_00, 250_00]),
             deliveryMinDays: deliveryMin, deliveryMaxDays: deliveryMin + between(1, 3), returnWindowDays: store.returnDays,
-            has3d, tryOnType: sub.tryOn ?? "NONE", isSample: true, qualityScore: quality.score, salesCount: 0, viewCount: 0, // popularity comes only from real orders and views
+            has3d, tryOnType: sub.tryOn ?? "NONE", isSample: true,
+            // Bhao-Taao on about half the catalog; derived from the title so the seeded RNG sequence is unchanged
+            bargainPct: [0, 10, 0, 15, 20][title.length % 5], qualityScore: quality.score, salesCount: 0, viewCount: 0, // popularity comes only from real orders and views
             media: { create: media },
           },
         });

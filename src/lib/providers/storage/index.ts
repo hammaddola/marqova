@@ -70,9 +70,13 @@ export async function storeImage(file: File, prefix: string) {
   return { url, thumbUrl, key: `${prefix}/${id}.webp` };
 }
 
+// The stored content type comes from the extension, never the upload: a client-declared
+// text/html or image/svg+xml would make the bucket serve script.
+const FILE_TYPES: Record<string, string> = { glb: "model/gltf-binary", gltf: "model/gltf+json", usdz: "model/vnd.usdz+zip", mp4: "video/mp4", webm: "video/webm" };
+
 export async function storeFile(file: File, prefix: string, ext: string) {
   if (file.size > MAX_UPLOAD_BYTES * 3) throw new Error("File is too large");
   const key = `${prefix}/${crypto.randomUUID()}.${ext}`;
-  const url = await getStorage().put(key, Buffer.from(await file.arrayBuffer()), file.type || "application/octet-stream");
+  const url = await getStorage().put(key, Buffer.from(await file.arrayBuffer()), FILE_TYPES[ext.toLowerCase()] ?? "application/octet-stream");
   return { url, key };
 }

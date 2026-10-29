@@ -110,7 +110,8 @@ export async function bulkListingAction(input: unknown): Promise<ActionResult<{ 
   let count = 0;
   if (action === "activate") {
     // Only complete listings can go live; incomplete ones are flagged.
-    const rows = await db.product.findMany({ where, select: { id: true, _count: { select: { media: true } } } });
+    // Rejected listings need an admin to approve them again.
+    const rows = await db.product.findMany({ where: { ...where, status: { not: "REJECTED" } }, select: { id: true, _count: { select: { media: true } } } });
     const ready = rows.filter((r) => r._count.media > 0).map((r) => r.id);
     count = (await db.product.updateMany({ where: { id: { in: ready } }, data: { status: "ACTIVE" } })).count;
     await db.product.updateMany({ where: { id: { in: rows.filter((r) => !ready.includes(r.id)).map((r) => r.id) } }, data: { status: "NEEDS_ATTENTION", moderationNote: "Add at least one image" } });
@@ -128,7 +129,9 @@ export async function bulkListingAction(input: unknown): Promise<ActionResult<{ 
   } else if (action === "price" && percent != null) {
     const variants = await db.productVariant.findMany({ where: { product: where }, select: { id: true, price: true, productId: true } });
     for (const v of variants) await db.productVariant.update({ where: { id: v.id }, data: { price: Math.max(100, Math.round((v.price * (100 + percent)) / 100)) } });
-    for (const id of ids) {
+    // Only products this store owns: `ids` comes from the client.
+    const owned = [...new Set(variants.map((v) => v.productId))];
+    for (const id of owned) {
       const min = await db.productVariant.aggregate({ where: { productId: id, isActive: true }, _min: { price: true } });
       if (min._min.price != null) {
         await db.product.update({ where: { id }, data: { basePrice: min._min.price } });
@@ -136,7 +139,7 @@ export async function bulkListingAction(input: unknown): Promise<ActionResult<{ 
         if (percent < 0) await enqueue("price-alerts.check", { productId: id }, { priority: PRIORITY.high });
       }
     }
-    count = ids.length;
+    count = owned.length;
   }
   await audit(s.user.id, `listing.bulk.${action}`, "Store", s.store.id, { ids: ids.length, percent });
   after(kickJobs);
@@ -256,7 +259,10 @@ export async function decideReturn(returnId: string, decision: "APPROVED" | "REJ
   if (!s) return fail("Seller account required.");
   const r = await db.return.findFirst({ where: { id: returnId, orderItem: { storeId: s.store.id } }, include: { orderItem: true } });
   if (!r) return fail("Return not found");
-  await db.return.update({ where: { id: r.id }, data: { status: decision, resolution: note?.slice(0, 500) || null } });
+  // Claim the transition atomically so a double click can't refund or restock twice.
+  const from = decision === "REFUNDED" ? ["APPROVED", "RECEIVED"] : ["REQUESTED"];
+  const claimed = await db.return.updateMany({ where: { id: r.id, status: { in: from as ("APPROVED" | "RECEIVED" | "REQUESTED")[] } }, data: { status: decision, resolution: note?.slice(0, 500) || null } });
+  if (!claimed.count) return fail(`This return is already ${r.status.toLowerCase()}.`);
   if (decision === "REFUNDED") {
     await db.orderItem.update({ where: { id: r.orderItemId }, data: { status: "RETURNED" } });
     await db.productVariant.update({ where: { id: r.orderItem.variantId }, data: { stock: { increment: r.orderItem.quantity } } });

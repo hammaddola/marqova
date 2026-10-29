@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { db } from "@/lib/db";
 import { randomToken } from "@/lib/utils";
 import { checkoutSchema, fieldErrors, type ActionResult } from "@/lib/validation";
@@ -10,6 +10,8 @@ import { getCartView } from "@/server/cart";
 import { getSessionUser } from "@/server/session";
 import { markOrderPlaced, releaseOrder, trackStat } from "@/server/orders";
 import { cartKind } from "@/lib/marketplace";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientBucket } from "@/lib/request";
 
 class CheckoutError extends Error {}
 
@@ -18,6 +20,10 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
   if (!parsed.success) return { ok: false, error: "Please check your details.", fields: fieldErrors(parsed.error) };
   const input = parsed.data;
   const user = await getSessionUser();
+  // Orders reserve stock immediately, so scripted checkouts could empty the shelves.
+  const bucket = clientBucket(await headers(), 5);
+  if (!rateLimit(`checkout:${bucket.key}`, bucket.limit, 10 * 60_000).ok || !rateLimit(`checkout:email:${input.email.toLowerCase()}`, 10, 60 * 60_000).ok)
+    return { ok: false, error: "Too many orders in a short time. Please wait a few minutes and try again." };
 
   const provider = getPaymentProvider(input.paymentMethod);
   if (!provider) return { ok: false, error: "That payment method isn't available." };
@@ -43,7 +49,11 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
         if (inv) await tx.inventory.update({ where: { id: inv.id }, data: { quantity: { decrement: line.quantity } } });
         if (!preview) await tx.product.update({ where: { id: line.product.id }, data: { salesCount: { increment: line.quantity } } });
       }
-      if (totals.couponApplied) await tx.coupon.update({ where: { code: totals.couponApplied }, data: { usedCount: { increment: 1 } } });
+      if (totals.couponApplied) {
+        // Conditional increment: parallel checkouts can't spend a limited code twice.
+        const used = await tx.$executeRaw`UPDATE "Coupon" SET "usedCount" = "usedCount" + 1 WHERE "code" = ${totals.couponApplied} AND ("usageLimit" IS NULL OR "usedCount" < "usageLimit")`;
+        if (used !== 1) throw new CheckoutError("That discount code has just been used up. Remove it from your cart to continue.");
+      }
 
       const created = await tx.order.create({
         data: {

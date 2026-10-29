@@ -16,7 +16,7 @@ export default async function CheckoutPage({ searchParams }: PageProps<"/checkou
   if (!view.purchasable.length) redirect("/cart");
 
   const coupon = await loadCoupon(view.couponCode);
-  const lines = view.purchasable.map((l) => ({ unitPrice: l.unitPrice, quantity: l.quantity, shippingFee: l.product.shippingFee, storeId: l.product.storeId }));
+  const lines = view.purchasable.map((l) => ({ unitPrice: l.unitPrice, quantity: l.quantity, shippingFee: l.product.shippingFee, storeId: l.product.storeId, productId: l.product.id }));
   // Server-computed totals for every delivery option, so the client never does price maths.
   const quotes = Object.fromEntries(view.totals.options.map((o) => [o.id, computeTotals(lines, { coupon, deliveryId: o.id })]));
   const addresses = user ? await db.address.findMany({ where: { userId: user.id }, orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }] }) : [];

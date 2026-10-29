@@ -6,9 +6,15 @@ import { MessageCircle, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "@/components/motion";
 import { cn } from "@/lib/utils";
 
-type Msg = { role: "user" | "assistant"; content: string; products?: { title: string; slug: string; price: string; rating: number }[]; orders?: { id: string; number: string; status: string }[] };
+type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  products?: { title: string; slug: string; price: string; rating: number }[];
+  orders?: { id: string; number: string; status: string }[];
+  link?: { href: string; label: string } | null;
+};
 
-const STARTERS = ["Navy linen shirt under 6000", "Track my order", "Which size should I buy?", "Wireless earbuds with 4+ stars"];
+const STARTERS = ["Navy linen shirt under 6000", "Track my order", "Is cash on delivery available?", "How do returns work?", "Wireless earbuds with 4+ stars"];
 
 /** Minimal markdown: **bold** only, rendered safely as React nodes. */
 function renderText(text: string) {
@@ -25,7 +31,10 @@ export function AssistantWidget() {
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [messages, busy]);
+  // Braces matter: newer browsers return a Promise from smooth scrolling, and React would call it as a cleanup.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, busy]);
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150);
   }, [open]);
@@ -44,7 +53,7 @@ export function AssistantWidget() {
         body: JSON.stringify({ messages: next.slice(-12).map(({ role, content }) => ({ role, content })) }),
       });
       const data = await res.json();
-      setMessages((m) => [...m, res.ok ? { role: "assistant", content: data.reply, products: data.products, orders: data.orders } : { role: "assistant", content: data.error ?? "Sorry, something went wrong." }]);
+      setMessages((m) => [...m, res.ok ? { role: "assistant", content: data.reply, products: data.products, orders: data.orders, link: data.link } : { role: "assistant", content: data.error ?? "Sorry, something went wrong." }]);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "I couldn't reach the server. Please try again." }]);
     } finally {
@@ -116,6 +125,11 @@ export function AssistantWidget() {
                           </li>
                         ))}
                       </ul>
+                    )}
+                    {m.link && (
+                      <Link href={m.link.href} onClick={() => setOpen(false)} className="mt-2 inline-block text-xs font-semibold text-gold-text underline underline-offset-2">
+                        {m.link.label} →
+                      </Link>
                     )}
                   </div>
                 </motion.div>

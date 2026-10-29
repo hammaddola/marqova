@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { after } from "next/server";
 import { z } from "zod";
+import { safeNextPath } from "@/lib/request";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/utils";
 import { fieldErrors, type ActionResult } from "@/lib/validation";
@@ -175,7 +176,7 @@ export async function saveHomeSection(input: unknown): Promise<ActionResult> {
   const parsed = sectionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const { id, ...data } = parsed.data;
-  if (data.href && !data.href.startsWith("/")) return { ok: false, error: "Links must be internal paths starting with /" };
+  if (data.href && safeNextPath(data.href, "") !== data.href) return { ok: false, error: "Links must be internal paths starting with /" };
   if (id) await db.homeSection.update({ where: { id }, data });
   else await db.homeSection.create({ data });
   revalidatePath("/");

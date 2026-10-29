@@ -1,7 +1,7 @@
 import { deliveryOptions, type DeliveryOption } from "./delivery";
 
-export type PricedLine = { unitPrice: number; quantity: number; shippingFee: number; storeId: string };
-export type CouponLike = { code: string; type: "PERCENT" | "FIXED" | "FREE_SHIPPING"; value: number; minSubtotal: number; storeId?: string | null };
+export type PricedLine = { unitPrice: number; quantity: number; shippingFee: number; storeId: string; productId?: string };
+export type CouponLike = { code: string; type: "PERCENT" | "FIXED" | "FREE_SHIPPING"; value: number; minSubtotal: number; storeId?: string | null; productId?: string | null };
 
 export type Totals = {
   subtotal: number;
@@ -34,7 +34,7 @@ export function computeTotals(lines: PricedLine[], opts: { coupon?: CouponLike |
   let couponError: string | null = null;
   const c = opts.coupon;
   if (c) {
-    const eligible = c.storeId ? lines.filter((l) => l.storeId === c.storeId) : lines;
+    const eligible = lines.filter((l) => (!c.storeId || l.storeId === c.storeId) && (!c.productId || l.productId === c.productId));
     const eligibleSubtotal = eligible.reduce((s, l) => s + l.unitPrice * l.quantity, 0);
     if (!eligible.length) couponError = "This coupon doesn't apply to items in your cart.";
     else if (eligibleSubtotal < c.minSubtotal) couponError = "Your cart doesn't meet this coupon's minimum spend yet.";

@@ -46,6 +46,7 @@ model User {
   conversations  Conversation[]
   messages       Message[]
   auditLogs      AuditLog[]
+  haggles        Haggle[]
   verificationsReviewed Verification[] @relation("VerificationReviewer")
 
   @@index([role, createdAt])
@@ -268,6 +269,8 @@ model Product {
   qualityScore     Int           @default(0)
   has3d            Boolean       @default(false)
   tryOnType        TryOnType     @default(NONE)
+  // Bhao-Taao: the most the seller will haggle down, in whole percent (0 = fixed price)
+  bargainPct       Int           @default(0)
   isSample         Boolean       @default(false)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -284,6 +287,7 @@ model Product {
   campaigns    SponsoredCampaign[]
   trustScore   TrustScore?
   dailyStats   ProductDailyStat[]
+  haggles      Haggle[]
 
   @@index([categoryId, status, createdAt])
   @@index([storeId, status, updatedAt])
@@ -756,6 +760,9 @@ model Coupon {
   // null = platform-wide coupon
   storeId     String?
   store       Store?     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  // Set for a Bhao-Taao deal: only this shopper, only this product
+  productId   String?
+  userId      String?
   type        CouponType
   // PERCENT: whole percent; FIXED: minor units
   value       Int
@@ -766,6 +773,24 @@ model Coupon {
   endsAt      DateTime?
   active      Boolean    @default(true)
   createdAt   DateTime   @default(now())
+}
+
+/// One shopper's running negotiation for one product (see src/lib/haggle.ts).
+model Haggle {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ask        Int
+  rounds     Int      @default(0)
+  calledBack Boolean  @default(false)
+  dealPrice  Int?
+  couponCode String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, productId])
 }
 
 model Promotion {

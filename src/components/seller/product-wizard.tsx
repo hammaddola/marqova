@@ -31,11 +31,12 @@ export type WizardInitial = {
   deliveryMinDays: string;
   deliveryMaxDays: string;
   returnWindowDays: string;
+  bargainPct: string;
 };
 
 const STEPS = ["Category", "Details", "Variants", "Media", "Shipping", "Preview"];
 
-export const EMPTY_INITIAL: WizardInitial = { categoryId: "", title: "", brand: "", description: "", bullets: ["", "", "", "", ""], attributes: {}, tags: [], variants: [], media: [], shippingFee: "0", deliveryMinDays: "2", deliveryMaxDays: "5", returnWindowDays: "30" };
+export const EMPTY_INITIAL: WizardInitial = { categoryId: "", title: "", brand: "", description: "", bullets: ["", "", "", "", ""], attributes: {}, tags: [], variants: [], media: [], shippingFee: "0", deliveryMinDays: "2", deliveryMaxDays: "5", returnWindowDays: "30", bargainPct: "0" };
 
 export function ProductWizard({ categories, initial = EMPTY_INITIAL, startStep = 0 }: { categories: WizardCategory[]; initial?: WizardInitial; startStep?: number }) {
   const router = useRouter();
@@ -139,6 +140,7 @@ export function ProductWizard({ categories, initial = EMPTY_INITIAL, startStep =
         deliveryMinDays: Number(s.deliveryMinDays || 2),
         deliveryMaxDays: Number(s.deliveryMaxDays || 5),
         returnWindowDays: Number(s.returnWindowDays || 30),
+        bargainPct: Number(s.bargainPct || 0),
         variants: s.variants.map((v) => ({ id: v.id, sku: v.sku, options: v.options, price: Number(v.price), compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : null, stock: Number(v.stock || 0), isActive: v.isActive })),
         media: s.media,
         publish,
@@ -372,6 +374,12 @@ export function ProductWizard({ categories, initial = EMPTY_INITIAL, startStep =
                   </Field>
                   <Field label="Delivery time — to (business days)" htmlFor="w-dmax">
                     <Input id="w-dmax" inputMode="numeric" value={s.deliveryMaxDays} onChange={(e) => set("deliveryMaxDays", e.target.value.replace(/\D/g, ""))} />
+                  </Field>
+                  <Field label="Bhao-Taao (bargaining)" htmlFor="w-bargain" hint="Shoppers can haggle with you, bazaar style. They never see your limit, and no deal goes below it.">
+                    <Select id="w-bargain" value={s.bargainPct} onChange={(e) => set("bargainPct", e.target.value)}>
+                      <option value="0">Off: fixed price</option>
+                      {["5", "10", "15", "20", "25"].map((p) => <option key={p} value={p}>Up to {p}% off</option>)}
+                    </Select>
                   </Field>
                 </div>
               )}

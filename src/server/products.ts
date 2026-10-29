@@ -37,7 +37,9 @@ export async function saveProduct(storeId: string, input: ProductInput) {
     hasBrand: !!input.brand,
   });
   // Publishing requires the basics; otherwise the listing lands in "Needs attention".
-  const status = !input.publish ? "DRAFT" : missing.length || !images.length ? "NEEDS_ATTENTION" : "ACTIVE";
+  // A listing rejected by moderation stays rejected until an admin approves it again.
+  const rejected = existing?.status === "REJECTED";
+  const status = rejected ? "REJECTED" : !input.publish ? "DRAFT" : missing.length || !images.length ? "NEEDS_ATTENTION" : "ACTIVE";
 
   const variants = input.variants.map((v) => ({
     ...v,
@@ -67,13 +69,14 @@ export async function saveProduct(storeId: string, input: ProductInput) {
     attributes: { ...input.attributes, ...axisValues },
     tags: input.tags,
     status,
-    moderationNote: missing.length ? `Missing required attributes: ${missing.map((m) => m.label).join(", ")}` : !images.length && input.publish ? "Add at least one image" : null,
+    moderationNote: rejected ? existing.moderationNote : missing.length ? `Missing required attributes: ${missing.map((m) => m.label).join(", ")}` : !images.length && input.publish ? "Add at least one image" : null,
     basePrice,
     compareAtPrice: compareAt,
     shippingFee: Math.round(input.shippingFee * 100),
     deliveryMinDays: input.deliveryMinDays,
     deliveryMaxDays: Math.max(input.deliveryMinDays, input.deliveryMaxDays),
     returnWindowDays: input.returnWindowDays,
+    bargainPct: input.bargainPct,
     qualityScore: quality.score,
     has3d,
     tryOnType: category.tryOnType,

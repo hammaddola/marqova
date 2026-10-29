@@ -19,6 +19,7 @@ import { SizeGuide } from "@/components/product/size-guide";
 import type { ReviewItem } from "@/components/product/reviews";
 import { FrequentlyBought, PriceHistory, QA, Reviews } from "@/components/product/lazy";
 import { ViewTracker } from "@/components/product/view-tracker";
+import { Haggle } from "@/components/product/haggle";
 import { ProductRail } from "@/components/product/product-rail";
 import { RecentlyViewed } from "@/components/home/recently-viewed";
 import { Reveal } from "@/components/motion";
@@ -255,6 +256,11 @@ export default async function ProductPage({ params }: PageProps<"/p/[slug]">) {
               otherOffers={offers}
               initiallySaved={!!saved}
             />
+            {p.bargainPct > 0 && (
+              <div className="mt-3">
+                <Haggle productId={p.id} slug={p.slug} storeName={p.store.name} signedIn={!!user} />
+              </div>
+            )}
             {storeTrust && (
               <div className="mt-3 flex items-center justify-between rounded-[8px] border border-sand bg-white p-4 text-sm">
                 <span className="flex items-center gap-1.5 font-medium">

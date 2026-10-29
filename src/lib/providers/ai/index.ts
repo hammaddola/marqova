@@ -108,12 +108,9 @@ export const mockAI: AIProvider = {
       .trim();
     return out;
   },
-  async chat(messages, context) {
-    const last = messages[messages.length - 1]?.content ?? "";
-    if (/track|order|where is/i.test(last)) return "You can follow every parcel in **Returns & Orders**. Each order shows the courier, tracking number and the latest scan. " + context;
-    if (/size|fit/i.test(last)) return "For clothing and shoes, open the product and tap **Try it on me** — the Try-On Studio recommends a size from your height, weight and body shape. " + context;
-    if (/compare|vs|versus|difference/i.test(last)) return "Add products to compare from their page (the ⇄ Compare button), or ask me about two products by name. " + context;
-    return context || "I can search the catalog in plain language, help with sizing, compare products and track orders. What are you shopping for?";
+  async chat(_messages, context) {
+    // The route already built a factual answer from live data; the mock returns it as is.
+    return context || "I can search the catalog in plain language, answer questions about delivery, payment and returns, and track orders. What are you shopping for?";
   },
 };
 
@@ -132,6 +129,7 @@ async function claude(system: string, messages: ChatMessage[], maxTokens = 800) 
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({ model: process.env.AI_MODEL ?? "claude-sonnet-5-5", max_tokens: maxTokens, system, messages }),
+    signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`AI request failed: ${res.status}`);
   const data = (await res.json()) as { content: { type: string; text?: string }[] };

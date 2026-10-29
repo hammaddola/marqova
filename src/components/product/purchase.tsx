@@ -27,7 +27,7 @@ type Ctx = {
 };
 
 const PurchaseCtx = createContext<Ctx | null>(null);
-const usePurchase = () => {
+export const usePurchase = () => {
   const c = use(PurchaseCtx);
   if (!c) throw new Error("usePurchase must be used inside <PurchaseProvider>");
   return c;

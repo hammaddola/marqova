@@ -96,6 +96,7 @@ export const productInputSchema = z.object({
   deliveryMinDays: z.coerce.number().int().min(0).max(30).default(2),
   deliveryMaxDays: z.coerce.number().int().min(0).max(60).default(5),
   returnWindowDays: z.coerce.number().int().min(0).max(90).default(30),
+  bargainPct: z.coerce.number().int().min(0).max(50).default(0),
   variants: z
     .array(
       z.object({

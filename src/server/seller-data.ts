@@ -31,5 +31,6 @@ export async function getWizardProduct(storeId: string, id: string): Promise<Wiz
     deliveryMinDays: String(p.deliveryMinDays),
     deliveryMaxDays: String(p.deliveryMaxDays),
     returnWindowDays: String(p.returnWindowDays),
+    bargainPct: String(p.bargainPct),
   };
 }
