@@ -22,7 +22,7 @@ export async function placeOrder(raw: unknown): Promise<ActionResult<{ redirectU
   const user = await getSessionUser();
   // Orders reserve stock immediately, so scripted checkouts could empty the shelves.
   const bucket = clientBucket(await headers(), 5);
-  if (!rateLimit(`checkout:${bucket.key}`, bucket.limit, 10 * 60_000).ok || !rateLimit(`checkout:email:${input.email.toLowerCase()}`, 10, 60 * 60_000).ok)
+  if (!rateLimit(`checkout:${bucket.key}`, bucket.limit, 10 * 60_000).ok)
     return { ok: false, error: "Too many orders in a short time. Please wait a few minutes and try again." };
 
   const provider = getPaymentProvider(input.paymentMethod);
